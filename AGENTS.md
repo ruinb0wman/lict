@@ -71,8 +71,9 @@
 - `vite-plugin-electron` - Vite Electron 集成插件
 - `electron-builder` - 应用打包工具
 - `electron-store` - 配置持久化
-- `zustand` - 状态管理（建议安装）
+- `zustand` - 状态管理
 - `uuid` - 生成唯一 ID
+- `dexie` - IndexedDB 封装
 
 ## 项目结构
 
@@ -307,6 +308,7 @@ bun run preview
 - `src/stores/appStore.ts` - 应用状态（当前页面、查询结果等）
 - `src/stores/favoritesStore.ts` - 收藏单词
 - `src/stores/historyStore.ts` - 查询历史
+- `src/stores/wordsStore.ts` - 单词缓存（IndexedDB）
 
 ### API 调用
 
@@ -373,6 +375,7 @@ bun run preview
 - [x] 使用 `electron-store` 进行配置持久化
 - [x] 集成 `zustand` 进行全局状态管理
 - [x] 使用 `lucide-react` 作为图标库
+- [x] 使用 `dexie` 封装 IndexedDB
 
 ### 待考虑
 

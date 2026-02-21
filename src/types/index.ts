@@ -82,6 +82,20 @@ export type ToastState = {
   visible: boolean;
 };
 
+// ==================== 单词条目类型（IndexedDB 存储）====================
+
+export type WordEntry = {
+  id: string;              // 单词唯一标识（使用单词本身作为 ID）
+  word: string;            // 单词
+  phonetic?: string;       // 音标
+  translation: TranslationMap;  // 翻译（可编辑）
+  example: ExampleSentence[];   // 例句（可编辑）
+  note?: string;           // 个人批注/备注
+  createdAt: number;       // 首次查询时间
+  updatedAt: number;       // 最后更新时间
+  queryCount: number;      // 查询次数
+}
+
 // ==================== 应用状态类型 ====================
 
 export type PageType = 'search' | 'favorites' | 'history' | 'review' | 'settings';

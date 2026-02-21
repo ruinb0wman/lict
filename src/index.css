@@ -1455,3 +1455,365 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
+/* ==================== 缓存指示器 ==================== */
+.search-cache-indicator {
+  position: absolute;
+  right: var(--spacing-md);
+  color: var(--color-success);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==================== 单词操作按钮组 ==================== */
+.word-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.edit-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.edit-toggle-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-accent);
+}
+
+/* ==================== 编辑模式样式 ==================== */
+.word-result-edit {
+  padding: var(--spacing-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.edit-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.edit-section:last-child {
+  margin-bottom: 0;
+}
+
+.edit-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-translation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.edit-translation-item .translation-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.edit-remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.edit-remove-btn:hover {
+  background: rgba(245, 101, 101, 0.15);
+  color: var(--color-accent);
+}
+
+.edit-add-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.edit-add-row.vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.edit-input-small {
+  width: 80px;
+  height: 36px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.edit-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.edit-input:focus,
+.edit-input-small:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(245, 101, 101, 0.2);
+}
+
+.edit-add-btn {
+  height: 36px;
+  padding: 0 var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-add-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.edit-example-item {
+  position: relative;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-md);
+  padding-right: 32px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.edit-example-item .example-en {
+  font-size: 13px;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.4;
+}
+
+.edit-example-item .example-zh {
+  font-size: 12px;
+  color: var(--color-secondary);
+  line-height: 1.4;
+}
+
+.edit-example-item .edit-remove-btn {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+}
+
+.edit-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.edit-save-btn,
+.edit-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: 40px;
+  padding: 0 var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-save-btn {
+  background: var(--color-accent);
+  color: white;
+}
+
+.edit-save-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.edit-cancel-btn {
+  background: transparent;
+  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.edit-cancel-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+}
+
+/* ==================== 批注样式 ==================== */
+.note-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.note-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  height: 40px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.note-add-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(245, 101, 101, 0.05);
+}
+
+.note-content {
+  padding: var(--spacing-md);
+  background: rgba(245, 101, 101, 0.05);
+  border: 1px solid rgba(245, 101, 101, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.note-text {
+  font-size: 13px;
+  color: var(--color-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.note-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.note-edit-btn,
+.note-delete-btn,
+.note-save-btn,
+.note-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: 32px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.note-edit-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.note-delete-btn:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.note-save-btn {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+.note-save-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+.note-cancel-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.note-section.editing {
+  padding: var(--spacing-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.note-textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.note-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(245, 101, 101, 0.2);
+}

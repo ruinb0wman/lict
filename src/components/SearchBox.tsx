@@ -1,26 +1,23 @@
 import { useState, useEffect, useCallback, KeyboardEvent, FormEvent } from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Database } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useHistoryStore } from '@/stores/historyStore'
-import { queryLLM } from '@/utils/api'
+import { useWordsStore } from '@/stores/wordsStore'
+import { queryLLM, isSentence } from '@/utils/api'
+import { IndexedDBService } from '@/utils/indexedDB'
 
 export function SearchBox() {
   const [input, setInput] = useState('')
+  const [isFromCache, setIsFromCache] = useState(false)
   const { isLoading, setLoading, setQueryResult, setError, setLastQuery, lastQuery, showToast } = useAppStore()
   const settings = useSettingsStore()
   const { addHistory } = useHistoryStore()
+  const { saveWordToCache, getWordFromCache } = useWordsStore()
 
   // 执行查询的通用函数
   const performSearch = useCallback(async (queryText: string) => {
     if (!queryText || isLoading) return
-
-    // 检查是否已配置 API Key
-    if (!settings.apiKey) {
-      showToast('请先设置 API Key', 'warning')
-      setError('请先设置 API Key')
-      return
-    }
 
     // 防重复查询
     if (queryText === lastQuery) return
@@ -28,10 +25,47 @@ export function SearchBox() {
     setLoading(true)
     setError(null)
     setLastQuery(queryText)
+    setIsFromCache(false)
 
     try {
+      // 首先检查是否是句子（句子不使用缓存）
+      const isSentenceQuery = isSentence(queryText)
+      
+      if (!isSentenceQuery) {
+        // 尝试从本地缓存获取
+        const cachedWord = await getWordFromCache(queryText)
+        if (cachedWord) {
+          // 使用缓存数据
+          const result = IndexedDBService.toQueryResult(cachedWord)
+          setQueryResult(result)
+          setIsFromCache(true)
+          // 更新查询次数
+          await saveWordToCache(queryText, result)
+          // 保存到历史记录
+          await addHistory(queryText, result, settings.historyLimit)
+          showToast('已从本地缓存加载', 'success', 2000)
+          setLoading(false)
+          return
+        }
+      }
+
+      // 检查是否已配置 API Key
+      if (!settings.apiKey) {
+        showToast('请先设置 API Key', 'warning')
+        setError('请先设置 API Key')
+        setLoading(false)
+        return
+      }
+
+      // 从 API 查询
       const result = await queryLLM(queryText, settings)
       setQueryResult(result)
+      
+      // 如果是单词，保存到本地缓存
+      if (!isSentenceQuery) {
+        await saveWordToCache(queryText, result as { word: string; phonetic?: string; translation: Record<string, string[]>; example: { en: string; zh: string }[] })
+      }
+      
       // 保存到历史记录
       await addHistory(queryText, result, settings.historyLimit)
       showToast('查询成功', 'success', 2000)
@@ -43,13 +77,18 @@ export function SearchBox() {
     } finally {
       setLoading(false)
     }
-  }, [isLoading, lastQuery, settings, setLoading, setError, setLastQuery, setQueryResult, addHistory, showToast])
+  }, [isLoading, lastQuery, settings, setLoading, setError, setLastQuery, setQueryResult, addHistory, showToast, saveWordToCache, getWordFromCache])
 
   const handleSearch = async () => {
     const trimmedInput = input.trim()
     if (!trimmedInput) return
     await performSearch(trimmedInput)
   }
+
+  // 初始化 wordsStore
+  useEffect(() => {
+    useWordsStore.getState().init()
+  }, [])
 
   // 监听剪切板内容变化
   useEffect(() => {
@@ -96,9 +135,11 @@ export function SearchBox() {
           onKeyDown={handleKeyDown}
           disabled={isLoading}
         />
-        {isLoading && (
+        {isLoading ? (
           <Loader2 className="search-loading" size={18} strokeWidth={1.5} />
-        )}
+        ) : isFromCache ? (
+          <span title="来自本地缓存"><Database className="search-cache-indicator" size={18} strokeWidth={1.5} /></span>
+        ) : null}
       </div>
     </form>
   )
