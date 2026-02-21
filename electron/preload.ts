@@ -18,7 +18,18 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     const [channel, ...omit] = args
     return ipcRenderer.invoke(channel, ...omit)
   },
+})
 
-  // You can expose other APTs you need here.
-  // ...
+// 窗口控制 API
+contextBridge.exposeInMainWorld('electronWindow', {
+  minimize: () => ipcRenderer.invoke('window:minimize'),
+  close: () => ipcRenderer.invoke('window:close'),
+  hide: () => ipcRenderer.invoke('window:hide'),
+  show: () => ipcRenderer.invoke('window:show'),
+})
+
+// 设置管理 API
+contextBridge.exposeInMainWorld('electronStore', {
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('settings:set', settings),
 })

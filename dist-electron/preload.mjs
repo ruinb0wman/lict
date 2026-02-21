@@ -17,6 +17,14 @@ electron.contextBridge.exposeInMainWorld("ipcRenderer", {
     const [channel, ...omit] = args;
     return electron.ipcRenderer.invoke(channel, ...omit);
   }
-  // You can expose other APTs you need here.
-  // ...
+});
+electron.contextBridge.exposeInMainWorld("electronWindow", {
+  minimize: () => electron.ipcRenderer.invoke("window:minimize"),
+  close: () => electron.ipcRenderer.invoke("window:close"),
+  hide: () => electron.ipcRenderer.invoke("window:hide"),
+  show: () => electron.ipcRenderer.invoke("window:show")
+});
+electron.contextBridge.exposeInMainWorld("electronStore", {
+  getSettings: () => electron.ipcRenderer.invoke("settings:get"),
+  setSettings: (settings) => electron.ipcRenderer.invoke("settings:set", settings)
 });

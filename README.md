@@ -261,9 +261,9 @@ type HistoryItem = {
 |------|------|
 | **整体风格** | 极简主义，留白充足，内容为王 |
 | **图标风格** | 线性图标，1.5px 细线条，24px 默认尺寸，统一使用 Lucide 图标库 |
-| **主色调** | 深灰黑 `#1a1a1a`（文字、图标）、纯黑 `#000000`（强调） |
+| **主色调** | 深灰黑 `#1a1a1a`（文字、图标）、红色 `#f56565`（强调） |
 | **辅助色** | 中性灰 `#6b7280`（次要文字）、浅灰 `#e5e7eb`（边框、分隔线） |
-| **背景色** | 纯白 `#ffffff`（主背景）、浅灰 `#f9fafb`（卡片、悬浮背景） |
+| **背景色** | 深灰 `#1b1b1f`（主背景）、浅灰 `#202127`（卡片、悬浮背景） |
 | **圆角** | 小元素 6px（按钮、输入框）、大元素 12px（卡片、弹窗） |
 | **字体** | 系统默认字体栈（-apple-system, BlinkMacSystemFont, 'Segoe UI'） |
 | **阴影** | 极淡阴影 `0 1px 2px rgba(0,0,0,0.05)`，仅在需要层次时使用 |
@@ -365,6 +365,7 @@ type HistoryItem = {
 - Bun（包管理器）
 - electron-store（配置存储）
 - zustand 状态管理
+- sqlite 存储查询过的单词
 
 ---
 
@@ -374,22 +375,22 @@ type HistoryItem = {
 
 #### 1.1 项目架构搭建
 
-- [ ] 创建项目目录结构（`src/components`, `src/pages`, `src/hooks`, `src/stores`, `src/utils`, `src/types`）
-- [ ] 安装必要依赖：`electron-store`, `uuid`
-- [ ] 配置路径别名 `@/` 指向 `src/`
-- [ ] 创建全局类型定义文件 `src/types/index.ts`
+- [x] 创建项目目录结构（`src/components`, `src/pages`, `src/hooks`, `src/stores`, `src/utils`, `src/types`）
+- [x] 安装必要依赖：`electron-store`, `uuid`
+- [x] 配置路径别名 `@/` 指向 `src/`
+- [x] 创建全局类型定义文件 `src/types/index.ts`
 
 #### 1.2 基础窗口配置
 
-- [ ] 修改 `electron/main.ts`：设置窗口大小 400×600
-- [ ] 设置无边框窗口 `frame: false`
-- [ ] 实现窗口拖拽功能（通过 `-webkit-app-region`）
-- [ ] 添加窗口关闭/最小化按钮（自定义标题栏）
-- [ ] 配置窗口位置记忆（下次打开在相同位置）
+- [x] 修改 `electron/main.ts`：设置窗口大小 400×600
+- [x] 设置无边框窗口 `frame: false`
+- [x] 实现窗口拖拽功能（通过 `-webkit-app-region`）
+- [x] 添加窗口关闭/最小化按钮（自定义标题栏）
+- [x] 配置窗口位置记忆（下次打开在相同位置）
 
 #### 1.3 类型定义
 
-- [ ] 创建 `src/types/index.ts`：
+- [x] 创建 `src/types/index.ts`：
   - `QueryResult` - 单词查询结果类型
   - `FavoriteWord` - 收藏单词类型
   - `HistoryItem` - 历史记录类型
@@ -397,34 +398,34 @@ type HistoryItem = {
 
 #### 1.4 状态管理（Zustand）
 
-- [ ] 安装 Zustand
-- [ ] 创建 `src/stores/settingsStore.ts` - 配置存储
-- [ ] 创建 `src/stores/appStore.ts` - 应用状态（当前页面、查询结果等）
+- [x] 安装 Zustand
+- [x] 创建 `src/stores/settingsStore.ts` - 配置存储
+- [x] 创建 `src/stores/appStore.ts` - 应用状态（当前页面、查询结果等）
 
 #### 1.5 设置页面
 
-- [ ] 创建设置页面组件 `src/pages/Settings.tsx`
-- [ ] 实现表单：API Base URL、API Key、Model、Temperature
-- [ ] API Key 输入框使用密码掩码
-- [ ] 实现「测试连接」按钮
-- [ ] 保存配置到 electron-store
+- [x] 创建设置页面组件 `src/pages/Settings.tsx`
+- [x] 实现表单：API Base URL、API Key、Model、Temperature
+- [x] API Key 输入框使用密码掩码
+- [x] 实现「测试连接」按钮
+- [x] 保存配置到 electron-store
 
 #### 1.6 单词查询功能
 
-- [ ] 创建搜索组件 `src/components/SearchBox.tsx`
-- [ ] 实现输入框样式（圆角、阴影、焦点效果）
-- [ ] 实现回车键触发查询
-- [ ] 创建 `src/utils/api.ts` - 封装 LLM API 调用
-- [ ] 实现查询 Loading 状态
-- [ ] 实现错误提示（网络错误、API 错误）
+- [x] 创建搜索组件 `src/components/SearchBox.tsx`
+- [x] 实现输入框样式（圆角、阴影、焦点效果）
+- [x] 实现回车键触发查询
+- [x] 创建 `src/utils/api.ts` - 封装 LLM API 调用
+- [x] 实现查询 Loading 状态
+- [x] 实现错误提示（网络错误、API 错误）
 
 #### 1.7 查询结果展示
 
-- [ ] 创建结果组件 `src/components/QueryResult.tsx`
-- [ ] 展示单词标题、音标、收藏按钮
-- [ ] 按词性分组展示翻译
-- [ ] 展示例句（英文+中文）
-- [ ] 空状态/错误状态展示
+- [x] 创建结果组件 `src/components/QueryResult.tsx`
+- [x] 展示单词标题、音标、收藏按钮
+- [x] 按词性分组展示翻译
+- [x] 展示例句（英文+中文）
+- [x] 空状态/错误状态展示
 
 ---
 

@@ -76,24 +76,34 @@
 
 ## 项目结构
 
-当前结构（需要扩展）：
+当前结构：
 
 ```
 dict/
 ├── electron/               # Electron 主进程代码
 │   ├── main.ts            # 主进程入口，创建 BrowserWindow
 │   ├── preload.ts         # 预加载脚本，暴露 IPC API
+│   ├── preload.d.ts       # 预加载脚本类型声明
 │   └── electron-env.d.ts  # Electron 类型定义
 ├── src/                   # 渲染进程（前端）代码
-│   ├── components/        # 共享组件（需创建）
-│   ├── pages/             # 页面组件（需创建）
-│   ├── hooks/             # 自定义 Hooks（需创建）
-│   ├── stores/            # 状态管理（需创建）
-│   ├── utils/             # 工具函数（需创建）
-│   ├── types/             # TypeScript 类型定义（需创建）
+│   ├── components/        # 共享组件
+│   │   ├── BottomNav.tsx      # 底部导航栏
+│   │   ├── QueryResult.tsx    # 查询结果展示
+│   │   ├── SearchBox.tsx      # 搜索框组件
+│   │   └── TitleBar.tsx       # 自定义标题栏
+│   ├── pages/             # 页面组件
+│   │   └── Settings.tsx       # 设置页面
+│   ├── hooks/             # 自定义 Hooks（预留）
+│   ├── stores/            # 状态管理（Zustand）
+│   │   ├── appStore.ts        # 应用状态
+│   │   └── settingsStore.ts   # 配置存储
+│   ├── utils/             # 工具函数
+│   │   └── api.ts             # LLM API 封装
+│   ├── types/             # TypeScript 类型定义
+│   │   ├── electron.d.ts      # Electron API 类型
+│   │   └── index.ts           # 全局类型定义
 │   ├── App.tsx            # 根组件
 │   ├── main.tsx           # 渲染进程入口
-│   ├── App.css            # 组件样式
 │   ├── index.css          # 全局样式
 │   ├── vite-env.d.ts      # Vite 类型定义
 │   └── assets/            # 静态资源
@@ -107,7 +117,8 @@ dict/
 ├── electron-builder.json5 # Electron Builder 打包配置
 ├── .eslintrc.cjs          # ESLint 配置
 ├── index.html             # 应用入口 HTML
-└── README.md              # 项目说明（含详细功能说明和开发计划）
+├── README.md              # 项目说明（含详细功能说明和开发计划）
+└── AGENTS.md              # AI 助手文档
 ```
 
 ## 架构说明
@@ -140,17 +151,22 @@ window.ipcRenderer.send(channel, ...args)   // 发送消息到主进程
 window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 ```
 
-需要添加的 IPC 通道：
+已实现的 IPC 通道：
 
-| 通道 | 方向 | 说明 |
-|------|------|------|
-| `data:getPath` | Renderer → Main | 获取用户数据目录 |
-| `favorites:load` | Renderer → Main | 加载收藏数据 |
-| `favorites:save` | Renderer → Main | 保存收藏数据 |
-| `history:load` | Renderer → Main | 加载历史数据 |
-| `history:save` | Renderer → Main | 保存历史数据 |
-| `clipboard:content` | Main → Renderer | 发送剪切板内容 |
-| `window:show` | Main → Renderer | 通知窗口显示 |
+| 通道 | 方向 | 说明 | 状态 |
+|------|------|------|------|
+| `window:minimize` | Renderer → Main | 最小化窗口 | ✅ 已完成 |
+| `window:close` | Renderer → Main | 关闭窗口 | ✅ 已完成 |
+| `window:hide` | Renderer → Main | 隐藏窗口 | ✅ 已完成 |
+| `window:show` | Renderer → Main | 显示窗口 | ✅ 已完成 |
+| `settings:get` | Renderer → Main | 获取设置 | ✅ 已完成 |
+| `settings:set` | Renderer → Main | 保存设置 | ✅ 已完成 |
+| `data:getPath` | Renderer → Main | 获取用户数据目录 | ⏳ 待实现 |
+| `favorites:load` | Renderer → Main | 加载收藏数据 | ⏳ 待实现 |
+| `favorites:save` | Renderer → Main | 保存收藏数据 | ⏳ 待实现 |
+| `history:load` | Renderer → Main | 加载历史数据 | ⏳ 待实现 |
+| `history:save` | Renderer → Main | 保存历史数据 | ⏳ 待实现 |
+| `clipboard:content` | Main → Renderer | 发送剪切板内容 | ⏳ 待实现 |
 
 ## 界面规范
 
@@ -170,10 +186,12 @@ window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 ```
 
 ### 视觉风格
-- 简洁现代风格
-- 主色调：蓝色系（#3b82f6）
-- 背景色：白色/浅灰色
-- 字体：系统默认字体
+- **整体风格**：极简主义，深色主题
+- **主色调**：深灰黑 `#1a1a1a`（文字）、红色 `#f56565`（强调）
+- **背景色**：深灰 `#1b1b1f`（主背景）、浅灰 `#202127`（卡片背景）
+- **字体**：系统默认字体栈
+- **图标**：Lucide 线性图标，1.5px 细线条
+- **圆角**：小元素 6px，大元素 12px
 
 ## 数据存储
 
@@ -288,14 +306,40 @@ bun run preview
 
 ## 当前状态
 
-当前 `src/App.tsx` 为 Vite + React 的默认模板，需要从零实现所有功能。
+### 第一阶段：基础功能 ✅ 已完成
 
-请按照 README.md 中的「开发计划」逐项完成开发。
+- [x] 项目架构搭建（目录结构、依赖安装、路径别名）
+- [x] 基础窗口配置（400×600、无边框、拖拽、位置记忆）
+- [x] 类型定义（QueryResult、FavoriteWord、HistoryItem、Settings）
+- [x] 状态管理（Zustand：appStore、settingsStore）
+- [x] 设置页面（API 配置、测试连接、配置持久化）
+- [x] 单词查询功能（SearchBox、API 封装、Loading、错误处理）
+- [x] 查询结果展示（单词/句子、音标、词性、例句、空状态）
+- [x] 深色主题视觉风格
+
+### 第二阶段：数据功能 ⏳ 待开发
+
+- [ ] 本地数据存储 IPC 接口
+- [ ] 收藏功能（favoritesStore）
+- [ ] 收藏页面（Favorites.tsx）
+- [ ] 历史记录功能（historyStore）
+- [ ] 历史页面（History.tsx）
+
+### 后续阶段
+
+详见 [README.md 开发计划](./README.md#开发计划)
 
 ## 扩展建议
 
-- [ ] 使用 `electron-store` 进行配置持久化
-- [ ] 集成 `zustand` 进行全局状态管理
+### 已集成
+
+- [x] 使用 `electron-store` 进行配置持久化
+- [x] 集成 `zustand` 进行全局状态管理
+- [x] 使用 `lucide-react` 作为图标库
+
+### 待考虑
+
 - [ ] 使用 `react-query` 或 `swr` 处理 API 请求和缓存（可选）
 - [ ] 添加单元测试（Vitest + React Testing Library）（可选）
 - [ ] 使用 `electron-log` 记录日志（可选）
+- [ ] 集成 i18n 国际化支持（可选）
