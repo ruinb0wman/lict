@@ -10,12 +10,12 @@ var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot
 var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "access private method"), method);
 var _validator, _encryptionKey, _encryptionAlgorithm, _options, _defaultValues, _isInMigration, _watcher, _watchFile, _debouncedChangeHandler, _Conf_instances, prepareOptions_fn, setupValidator_fn, captureSchemaDefaults_fn, applyDefaultValues_fn, configureSerialization_fn, resolvePath_fn, initializeStore_fn, runMigrations_fn;
-import electron, { ipcMain as ipcMain$1, app as app$1, BrowserWindow, screen } from "electron";
+import electron, { app as app$1, ipcMain as ipcMain$1, globalShortcut, screen, BrowserWindow, Tray, Menu, clipboard } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 import process$1 from "node:process";
 import { promisify, isDeepStrictEqual } from "node:util";
-import fs from "node:fs";
 import crypto from "node:crypto";
 import assert from "node:assert";
 import os from "node:os";
@@ -15615,6 +15615,7 @@ const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let win;
+let tray = null;
 const WINDOW_WIDTH = 400;
 const WINDOW_HEIGHT = 600;
 function createWindow() {
@@ -15647,6 +15648,8 @@ function createWindow() {
     fullscreenable: false,
     maximizable: false,
     titleBarStyle: "hidden",
+    show: false,
+    // 初始不显示窗口，等托盘准备好后再显示
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       preload: path.join(__dirname$1, "preload.mjs"),
@@ -15661,8 +15664,13 @@ function createWindow() {
       store.set("windowY", newY);
     }
   });
-  win.on("closed", () => {
-    win = null;
+  win.on("close", (event) => {
+    if (isQuitting) {
+      win = null;
+      return;
+    }
+    event.preventDefault();
+    win == null ? void 0 : win.hide();
   });
   win.webContents.on("did-finish-load", () => {
     win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
@@ -15672,12 +15680,85 @@ function createWindow() {
   } else {
     win.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
+  return win;
+}
+function createTray() {
+  const iconFileName = process.platform === "linux" ? "icon.png" : "electron-vite.svg";
+  const iconPath = VITE_DEV_SERVER_URL ? path.join(process.env.VITE_PUBLIC, iconFileName) : path.join(RENDERER_DIST, iconFileName);
+  tray = new Tray(iconPath);
+  tray.setToolTip("Dict - AI 词典工具");
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "显示/隐藏窗口",
+      click: () => {
+        toggleWindow();
+      }
+    },
+    { type: "separator" },
+    {
+      label: "退出",
+      click: () => {
+        isQuitting = true;
+        app$1.quit();
+      }
+    }
+  ]);
+  tray.setContextMenu(contextMenu);
+  tray.on("click", () => {
+    toggleWindow();
+  });
+  tray.on("double-click", () => {
+    toggleWindow();
+  });
+}
+function toggleWindow() {
+  if (!win) {
+    createWindow();
+    return;
+  }
+  if (win.isVisible()) {
+    win.hide();
+  } else {
+    win.show();
+    win.focus();
+    setTimeout(sendClipboardContent, 300);
+  }
+}
+const DATA_DIR = path.join(app$1.getPath("userData"), "dict-data");
+const FAVORITES_FILE = path.join(DATA_DIR, "favorites.json");
+const HISTORY_FILE = path.join(DATA_DIR, "history.json");
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+function readJsonFile(filePath, defaultValue) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return defaultValue;
+    }
+    const content2 = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(content2);
+  } catch (error2) {
+    console.error(`Failed to read ${filePath}:`, error2);
+    return defaultValue;
+  }
+}
+function writeJsonFile(filePath, data) {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+    return true;
+  } catch (error2) {
+    console.error(`Failed to write ${filePath}:`, error2);
+    return false;
+  }
 }
 ipcMain$1.handle("window:minimize", () => {
   win == null ? void 0 : win.minimize();
 });
 ipcMain$1.handle("window:close", () => {
-  win == null ? void 0 : win.close();
+  win == null ? void 0 : win.hide();
 });
 ipcMain$1.handle("window:hide", () => {
   win == null ? void 0 : win.hide();
@@ -15695,18 +15776,80 @@ ipcMain$1.handle("settings:set", (_, settings) => {
   store.set("settings", settings);
   return true;
 });
+ipcMain$1.handle("data:getPath", () => {
+  return DATA_DIR;
+});
+ipcMain$1.handle("favorites:load", () => {
+  return readJsonFile(FAVORITES_FILE, []);
+});
+ipcMain$1.handle("favorites:save", (_, favorites) => {
+  return writeJsonFile(FAVORITES_FILE, favorites);
+});
+ipcMain$1.handle("history:load", () => {
+  return readJsonFile(HISTORY_FILE, []);
+});
+ipcMain$1.handle("history:save", (_, history) => {
+  return writeJsonFile(HISTORY_FILE, history);
+});
 app$1.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app$1.quit();
-    win = null;
-  }
 });
 app$1.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+  if (win === null) {
     createWindow();
+  } else {
+    win.show();
   }
 });
-app$1.whenReady().then(createWindow);
+let lastClipboardText = "";
+function isEnglishText(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const hasLetter = /[a-zA-Z]/.test(trimmed);
+  const isValidChars = /^[\x00-\x7F]+$/.test(trimmed);
+  return hasLetter && isValidChars;
+}
+function sendClipboardContent() {
+  if (!win) return;
+  const text = clipboard.readText().trim();
+  if (!text) return;
+  if (!isEnglishText(text)) return;
+  if (text === lastClipboardText) return;
+  lastClipboardText = text;
+  win.webContents.send("clipboard:content", text);
+}
+function registerGlobalShortcut() {
+  const settings = store.get("settings", {});
+  const shortcut = settings.shortcut || "Alt+D";
+  globalShortcut.unregisterAll();
+  const registered = globalShortcut.register(shortcut, () => {
+    if (!win) {
+      createWindow();
+      return;
+    }
+    if (win.isVisible()) {
+      win.hide();
+    } else {
+      win.show();
+      win.focus();
+      setTimeout(sendClipboardContent, 300);
+    }
+  });
+  if (!registered) {
+    console.warn(`Failed to register global shortcut: ${shortcut}`);
+  }
+}
+let isQuitting = false;
+app$1.whenReady().then(() => {
+  createWindow();
+  createTray();
+  registerGlobalShortcut();
+  app$1.on("browser-window-focus", () => {
+    setTimeout(sendClipboardContent, 300);
+  });
+});
+app$1.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
 export {
   MAIN_DIST,
   RENDERER_DIST,

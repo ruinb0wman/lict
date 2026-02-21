@@ -1,4 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
+import type { FavoriteWord, HistoryItem } from '../src/types'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -20,6 +21,16 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   },
 })
 
+// 剪切板 API
+contextBridge.exposeInMainWorld('electronClipboard', {
+  // 监听剪切板内容变化
+  onClipboardContent: (callback: (text: string) => void) => {
+    const handler = (_: unknown, text: string) => callback(text)
+    ipcRenderer.on('clipboard:content', handler)
+    return () => ipcRenderer.off('clipboard:content', handler)
+  },
+})
+
 // 窗口控制 API
 contextBridge.exposeInMainWorld('electronWindow', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
@@ -32,4 +43,17 @@ contextBridge.exposeInMainWorld('electronWindow', {
 contextBridge.exposeInMainWorld('electronStore', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('settings:set', settings),
+})
+
+// 数据存储 API
+contextBridge.exposeInMainWorld('electronData', {
+  getPath: () => ipcRenderer.invoke('data:getPath'),
+  favorites: {
+    load: () => ipcRenderer.invoke('favorites:load'),
+    save: (favorites: FavoriteWord[]) => ipcRenderer.invoke('favorites:save', favorites),
+  },
+  history: {
+    load: () => ipcRenderer.invoke('history:load'),
+    save: (history: HistoryItem[]) => ipcRenderer.invoke('history:save', history),
+  },
 })

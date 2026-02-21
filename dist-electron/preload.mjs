@@ -18,6 +18,14 @@ electron.contextBridge.exposeInMainWorld("ipcRenderer", {
     return electron.ipcRenderer.invoke(channel, ...omit);
   }
 });
+electron.contextBridge.exposeInMainWorld("electronClipboard", {
+  // 监听剪切板内容变化
+  onClipboardContent: (callback) => {
+    const handler = (_, text) => callback(text);
+    electron.ipcRenderer.on("clipboard:content", handler);
+    return () => electron.ipcRenderer.off("clipboard:content", handler);
+  }
+});
 electron.contextBridge.exposeInMainWorld("electronWindow", {
   minimize: () => electron.ipcRenderer.invoke("window:minimize"),
   close: () => electron.ipcRenderer.invoke("window:close"),
@@ -27,4 +35,15 @@ electron.contextBridge.exposeInMainWorld("electronWindow", {
 electron.contextBridge.exposeInMainWorld("electronStore", {
   getSettings: () => electron.ipcRenderer.invoke("settings:get"),
   setSettings: (settings) => electron.ipcRenderer.invoke("settings:set", settings)
+});
+electron.contextBridge.exposeInMainWorld("electronData", {
+  getPath: () => electron.ipcRenderer.invoke("data:getPath"),
+  favorites: {
+    load: () => electron.ipcRenderer.invoke("favorites:load"),
+    save: (favorites) => electron.ipcRenderer.invoke("favorites:save", favorites)
+  },
+  history: {
+    load: () => electron.ipcRenderer.invoke("history:load"),
+    save: (history) => electron.ipcRenderer.invoke("history:save", history)
+  }
 });

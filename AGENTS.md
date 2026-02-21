@@ -88,14 +88,25 @@ dict/
 ├── src/                   # 渲染进程（前端）代码
 │   ├── components/        # 共享组件
 │   │   ├── BottomNav.tsx      # 底部导航栏
+│   │   ├── ErrorBoundary.tsx  # 全局错误边界
+│   │   ├── NetworkStatus.tsx  # 网络状态检测
+│   │   ├── PageTransition.tsx # 页面过渡动画包装器
 │   │   ├── QueryResult.tsx    # 查询结果展示
 │   │   ├── SearchBox.tsx      # 搜索框组件
-│   │   └── TitleBar.tsx       # 自定义标题栏
+│   │   ├── TitleBar.tsx       # 自定义标题栏
+│   │   └── Toast.tsx          # Toast 提示组件
 │   ├── pages/             # 页面组件
+│   │   ├── Favorites.tsx      # 收藏页面
+│   │   ├── History.tsx        # 历史记录页面
+│   │   ├── Review.tsx         # 复习页面
 │   │   └── Settings.tsx       # 设置页面
-│   ├── hooks/             # 自定义 Hooks（预留）
+│   ├── hooks/             # 自定义 Hooks
+│   │   ├── useNetworkStatus.ts   # 网络状态 Hook
+│   │   └── usePageTransition.ts  # 页面过渡动画 Hook
 │   ├── stores/            # 状态管理（Zustand）
-│   │   ├── appStore.ts        # 应用状态
+│   │   ├── appStore.ts        # 应用状态（页面、查询、Toast）
+│   │   ├── favoritesStore.ts  # 收藏状态
+│   │   ├── historyStore.ts    # 历史记录状态
 │   │   └── settingsStore.ts   # 配置存储
 │   ├── utils/             # 工具函数
 │   │   └── api.ts             # LLM API 封装
@@ -161,11 +172,11 @@ window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 | `window:show` | Renderer → Main | 显示窗口 | ✅ 已完成 |
 | `settings:get` | Renderer → Main | 获取设置 | ✅ 已完成 |
 | `settings:set` | Renderer → Main | 保存设置 | ✅ 已完成 |
-| `data:getPath` | Renderer → Main | 获取用户数据目录 | ⏳ 待实现 |
-| `favorites:load` | Renderer → Main | 加载收藏数据 | ⏳ 待实现 |
-| `favorites:save` | Renderer → Main | 保存收藏数据 | ⏳ 待实现 |
-| `history:load` | Renderer → Main | 加载历史数据 | ⏳ 待实现 |
-| `history:save` | Renderer → Main | 保存历史数据 | ⏳ 待实现 |
+| `data:getPath` | Renderer → Main | 获取用户数据目录 | ✅ 已完成 |
+| `favorites:load` | Renderer → Main | 加载收藏数据 | ✅ 已完成 |
+| `favorites:save` | Renderer → Main | 保存收藏数据 | ✅ 已完成 |
+| `history:load` | Renderer → Main | 加载历史数据 | ✅ 已完成 |
+| `history:save` | Renderer → Main | 保存历史数据 | ✅ 已完成 |
 | `clipboard:content` | Main → Renderer | 发送剪切板内容 | ⏳ 待实现 |
 
 ## 界面规范
@@ -317,15 +328,41 @@ bun run preview
 - [x] 查询结果展示（单词/句子、音标、词性、例句、空状态）
 - [x] 深色主题视觉风格
 
-### 第二阶段：数据功能 ⏳ 待开发
+### 第二阶段：数据功能 ✅ 已完成
 
-- [ ] 本地数据存储 IPC 接口
-- [ ] 收藏功能（favoritesStore）
-- [ ] 收藏页面（Favorites.tsx）
-- [ ] 历史记录功能（historyStore）
-- [ ] 历史页面（History.tsx）
+- [x] 本地数据存储 IPC 接口
+- [x] 收藏功能（favoritesStore）
+- [x] 收藏页面（Favorites.tsx）
+- [x] 历史记录功能（historyStore）
+- [x] 历史页面（History.tsx）
 
-### 后续阶段
+### 第三阶段：增强功能 ✅ 已完成
+
+- [x] 语句翻译（自动识别单词/句子，不同返回格式）
+- [x] 自动读取剪切板（窗口显示时检测英文内容并自动查询）
+- [x] 复习模式（卡片翻转、认识/不认识、复习统计）
+- [x] 全局快捷键（Alt+D 唤出/隐藏，支持自定义，Esc 隐藏）
+
+### 第四阶段：UI/UX 优化 ✅ 已完成
+
+- [x] 导航和布局
+  - [x] 底部导航栏组件（BottomNav.tsx）
+  - [x] 页面切换动画（usePageTransition hook + CSS 动画）
+  - [x] 当前页面高亮显示
+- [x] 样式优化
+  - [x] CSS 变量控制主题（已完成）
+  - [x] 主色调红色 #f56565（已完成）
+  - [x] Loading 动画（已完成）
+  - [x] Toast 提示组件（四种类型：success/error/warning/info）
+  - [x] 滚动条样式优化（已完成）
+- [x] 错误处理优化
+  - [x] 全局错误边界（ErrorBoundary 组件）
+  - [x] API 错误友好提示（Toast 提示）
+  - [x] 网络断开检测（useNetworkStatus hook）
+- [x] 性能优化
+  - [x] 组件懒加载（React.lazy + Suspense）
+
+### 第五阶段：打包发布 ⏳ 待开始
 
 详见 [README.md 开发计划](./README.md#开发计划)
 
@@ -343,3 +380,16 @@ bun run preview
 - [ ] 添加单元测试（Vitest + React Testing Library）（可选）
 - [ ] 使用 `electron-log` 记录日志（可选）
 - [ ] 集成 i18n 国际化支持（可选）
+
+## 用户通知
+
+完成重要操作后，使用 `notify-send` 命令行工具通知用户：
+
+```bash
+notify-send "任务完成" "已完成 xxx 功能"
+```
+
+示例：
+- `notify-send "任务完成" "已完成用户自定义 API token 功能"`
+- `notify-send "构建成功" "应用已打包完成"`
+- `notify-send "错误" "构建失败，请检查日志"`

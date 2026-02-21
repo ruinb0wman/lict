@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Check, AlertCircle, Loader2 } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Loader2, Keyboard } from 'lucide-react'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 export function Settings() {
@@ -10,11 +10,9 @@ export function Settings() {
     model: settings.model,
     temperature: settings.temperature,
     historyLimit: settings.historyLimit,
+    shortcut: settings.shortcut,
   })
-  const [testStatus, setTestStatus] = useState<{
-    success: boolean
-    message: string
-  } | null>(null)
+  const [isRecordingShortcut, setIsRecordingShortcut] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -32,6 +30,7 @@ export function Settings() {
       model: settings.model,
       temperature: settings.temperature,
       historyLimit: settings.historyLimit,
+      shortcut: settings.shortcut,
     })
   }, [
     settings.apiBaseUrl,
@@ -39,6 +38,7 @@ export function Settings() {
     settings.model,
     settings.temperature,
     settings.historyLimit,
+    settings.shortcut,
   ])
 
   const handleChange = (
@@ -53,6 +53,29 @@ export function Settings() {
     }))
   }
 
+  // 快捷键录制
+  const handleShortcutKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    
+    const keys: string[] = []
+    if (e.metaKey) keys.push('Cmd')
+    if (e.ctrlKey) keys.push('Ctrl')
+    if (e.altKey) keys.push('Alt')
+    if (e.shiftKey) keys.push('Shift')
+    
+    // 添加主键
+    const key = e.key
+    if (key && !['Meta', 'Control', 'Alt', 'Shift'].includes(key)) {
+      keys.push(key.length === 1 ? key.toUpperCase() : key)
+    }
+    
+    if (keys.length > 0) {
+      const shortcut = keys.join('+')
+      setFormData(prev => ({ ...prev, shortcut }))
+      setIsRecordingShortcut(false)
+    }
+  }, [])
+
   const handleSave = async () => {
     setIsSaving(true)
     await settings.saveSettings(formData)
@@ -61,14 +84,12 @@ export function Settings() {
 
   const handleTestConnection = async () => {
     setIsTesting(true)
-    setTestStatus(null)
     
     // 先保存当前设置
     await settings.saveSettings(formData)
     
     // 测试连接
-    const result = await settings.testConnection()
-    setTestStatus(result)
+    await settings.testConnection()
     setIsTesting(false)
   }
 
@@ -144,20 +165,31 @@ export function Settings() {
           </div>
         </div>
 
-        {testStatus && (
-          <div
-            className={`test-status ${
-              testStatus.success ? 'success' : 'error'
-            }`}
-          >
-            {testStatus.success ? (
-              <Check size={16} strokeWidth={1.5} />
-            ) : (
-              <AlertCircle size={16} strokeWidth={1.5} />
-            )}
-            <span>{testStatus.message}</span>
-          </div>
-        )}
+        <div className="form-group">
+          <label htmlFor="shortcut">
+            <Keyboard size={14} strokeWidth={1.5} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+            全局快捷键
+          </label>
+          <input
+            type="text"
+            id="shortcut"
+            name="shortcut"
+            value={formData.shortcut}
+            onChange={handleChange}
+            onKeyDown={isRecordingShortcut ? handleShortcutKeyDown : undefined}
+            onFocus={() => setIsRecordingShortcut(true)}
+            onBlur={() => setIsRecordingShortcut(false)}
+            placeholder="点击输入快捷键，如：Alt+D"
+            readOnly={isRecordingShortcut}
+            style={{ 
+              cursor: isRecordingShortcut ? 'pointer' : 'text',
+              backgroundColor: isRecordingShortcut ? 'rgba(245, 101, 101, 0.1)' : undefined 
+            }}
+          />
+          <small style={{ color: '#6b7280', fontSize: '11px' }}>
+            {isRecordingShortcut ? '按下按键组合设置快捷键...' : '点击输入框设置快捷键'}
+          </small>
+        </div>
 
         <div className="form-actions">
           <button

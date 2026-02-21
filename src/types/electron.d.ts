@@ -1,5 +1,7 @@
 // 预加载脚本暴露的 API 类型声明
 
+import type { FavoriteWord, HistoryItem } from './index'
+
 declare global {
   interface Window {
     ipcRenderer: {
@@ -17,6 +19,20 @@ declare global {
     electronStore: {
       getSettings: () => Promise<Record<string, unknown>>
       setSettings: (settings: Record<string, unknown>) => Promise<boolean>
+    }
+    electronData: {
+      getPath: () => Promise<string>
+      favorites: {
+        load: () => Promise<FavoriteWord[]>
+        save: (favorites: FavoriteWord[]) => Promise<boolean>
+      }
+      history: {
+        load: () => Promise<HistoryItem[]>
+        save: (history: HistoryItem[]) => Promise<boolean>
+      }
+    }
+    electronClipboard: {
+      onClipboardContent: (callback: (text: string) => void) => () => void
     }
   }
 }

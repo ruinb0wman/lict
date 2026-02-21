@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Settings, defaultSettings } from '@/types'
+import { useAppStore } from '@/stores/appStore'
 
 interface SettingsState extends Settings {
   isLoading: boolean
@@ -30,6 +31,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } catch (error) {
       console.error('Failed to load settings:', error)
       set({ isLoading: false })
+      setTimeout(() => {
+        useAppStore.getState().showToast('加载设置失败', 'error')
+      }, 0)
     }
   },
 
@@ -48,9 +52,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       }
       await window.electronStore.setSettings(merged)
       set({ ...merged, isLoading: false })
+      setTimeout(() => {
+        useAppStore.getState().showToast('设置已保存', 'success')
+      }, 0)
     } catch (error) {
       console.error('Failed to save settings:', error)
       set({ isLoading: false })
+      setTimeout(() => {
+        useAppStore.getState().showToast('保存设置失败', 'error')
+      }, 0)
     }
   },
 
@@ -77,18 +87,29 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       })
 
       if (response.ok) {
+        setTimeout(() => {
+          useAppStore.getState().showToast('API 连接测试成功', 'success')
+        }, 0)
         return { success: true, message: '连接成功！' }
       } else {
         const errorData = await response.json().catch(() => ({}))
+        const message = errorData.error?.message || response.statusText
+        setTimeout(() => {
+          useAppStore.getState().showToast(`连接失败: ${message}`, 'error', 5000)
+        }, 0)
         return { 
           success: false, 
-          message: `连接失败: ${errorData.error?.message || response.statusText}` 
+          message: `连接失败: ${message}` 
         }
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : '未知错误'
+      setTimeout(() => {
+        useAppStore.getState().showToast(`网络错误: ${message}`, 'error', 5000)
+      }, 0)
       return { 
         success: false, 
-        message: `网络错误: ${error instanceof Error ? error.message : '未知错误'}` 
+        message: `网络错误: ${message}` 
       }
     }
   },

@@ -1,10 +1,12 @@
 import { Star } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
+import { useFavoritesStore } from '@/stores/favoritesStore'
 import { isSentence } from '@/utils/api'
 import type { QueryResult as QueryResultType, SentenceTranslation } from '@/types'
 
 export function QueryResultView() {
   const { queryResult, isLoading, error, lastQuery } = useAppStore()
+  const { isFavorite, toggleFavorite } = useFavoritesStore()
 
   // 加载状态
   if (isLoading) {
@@ -52,6 +54,11 @@ export function QueryResultView() {
 
   // 单词查询结果
   const wordResult = queryResult as QueryResultType
+  const favorited = isFavorite(wordResult.word)
+
+  const handleToggleFavorite = () => {
+    toggleFavorite(wordResult.word, wordResult)
+  }
 
   return (
     <div className="query-result">
@@ -59,8 +66,16 @@ export function QueryResultView() {
       <div className="word-header">
         <div className="word-title-row">
           <h2 className="word-title">{wordResult.word}</h2>
-          <button className="favorite-btn" title="收藏">
-            <Star size={20} strokeWidth={1.5} />
+          <button 
+            className={`favorite-btn ${favorited ? 'active' : ''}`} 
+            title={favorited ? '取消收藏' : '收藏'}
+            onClick={handleToggleFavorite}
+          >
+            <Star 
+              size={20} 
+              strokeWidth={1.5} 
+              fill={favorited ? 'currentColor' : 'none'} 
+            />
           </button>
         </div>
         {wordResult.phonetic && (
