@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, screen, clipboard, Tray, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, clipboard, Tray, Menu, dialog } from 'electron'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import Store from 'electron-store'
@@ -37,6 +38,18 @@ type HistoryItem = {
   type: HistoryItemType
   result: QueryResponse
   timestamp: number
+}
+
+type FavoriteWord = {
+  id: string
+  word: string
+  translation: string
+  phonetic?: string
+  createdAt: number
+  queryData: QueryResult
+  reviewCount: number
+  lastReviewedAt?: number
+  masteryLevel: number
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -251,6 +264,76 @@ ipcMain.handle('history:load', () => {
 ipcMain.handle('history:save', (_, history: HistoryItem[]) => {
   store.set('history', history)
   return true
+})
+
+// 收藏数据导入导出
+ipcMain.handle('favorites:export', async (_, favorites: FavoriteWord[]) => {
+  try {
+    const { filePath } = await dialog.showSaveDialog({
+      title: '导出收藏单词',
+      defaultPath: `favorites_${new Date().toISOString().split('T')[0]}.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+    
+    if (!filePath) {
+      return { success: false, cancelled: true }
+    }
+    
+    const exportData = {
+      version: '1.0',
+      exportDate: Date.now(),
+      favorites: favorites
+    }
+    
+    fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2), 'utf-8')
+    return { success: true, filePath }
+  } catch (error) {
+    console.error('Export favorites failed:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('favorites:import', async () => {
+  try {
+    const { filePaths } = await dialog.showOpenDialog({
+      title: '导入收藏单词',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+    
+    if (!filePaths || filePaths.length === 0) {
+      return { success: false, cancelled: true }
+    }
+    
+    const fileContent = fs.readFileSync(filePaths[0], 'utf-8')
+    const importData = JSON.parse(fileContent)
+    
+    // 验证数据结构
+    if (!importData.favorites || !Array.isArray(importData.favorites)) {
+      return { success: false, error: 'Invalid file format: favorites array not found' }
+    }
+    
+    // 验证每个收藏项的必要字段
+    const validFavorites = importData.favorites.filter((f: FavoriteWord) => {
+      return f.id && f.word && f.queryData && f.createdAt
+    })
+    
+    return { 
+      success: true, 
+      favorites: validFavorites,
+      totalCount: importData.favorites.length,
+      validCount: validFavorites.length
+    }
+  } catch (error) {
+    console.error('Import favorites failed:', error)
+    return { success: false, error: String(error) }
+  }
 })
 
 // 应用生命周期

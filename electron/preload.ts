@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
-import type { HistoryItem } from '../src/types'
+import type { HistoryItem, FavoriteWord } from '../src/types'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -53,6 +53,12 @@ contextBridge.exposeInMainWorld('electronData', {
     load: () => ipcRenderer.invoke('history:load'),
     save: (history: HistoryItem[]) => ipcRenderer.invoke('history:save', history),
   },
+})
+
+// 收藏导入导出 API
+contextBridge.exposeInMainWorld('electronFavorites', {
+  export: (favorites: FavoriteWord[]) => ipcRenderer.invoke('favorites:export', favorites),
+  import: () => ipcRenderer.invoke('favorites:import'),
 })
 
 

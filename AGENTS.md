@@ -154,13 +154,20 @@ dict/
 
 ### IPC 通信
 
-预加载脚本暴露了 `window.ipcRenderer` 对象：
+预加载脚本暴露了以下 API 对象：
 
+**`window.ipcRenderer`** - 通用 IPC 通信：
 ```typescript
 window.ipcRenderer.on(channel, listener)    // 监听主进程消息
 window.ipcRenderer.off(channel, listener)   // 移除监听
 window.ipcRenderer.send(channel, ...args)   // 发送消息到主进程
 window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
+```
+
+**`window.electronFavorites`** - 收藏导入导出：
+```typescript
+window.electronFavorites.export(favorites: FavoriteWord[])  // 导出收藏到 JSON 文件
+window.electronFavorites.import()                          // 从 JSON 文件导入收藏
 ```
 
 已实现的 IPC 通道：
@@ -179,6 +186,8 @@ window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 | `history:load` | Renderer → Main | 加载历史数据 | ✅ 已完成 |
 | `history:save` | Renderer → Main | 保存历史数据 | ✅ 已完成 |
 | `clipboard:content` | Main → Renderer | 发送剪切板内容 | ✅ 已完成 |
+| `favorites:export` | Renderer → Main | 导出收藏数据 | ✅ 已完成 |
+| `favorites:import` | Renderer → Main | 导入收藏数据 | ✅ 已完成 |
 
 ## 界面规范
 
@@ -339,6 +348,7 @@ bun run preview
 
 - [x] 收藏功能（favoritesStore + IndexedDB/Dexie）
 - [x] 收藏页面（Favorites.tsx）
+- [x] 收藏导入导出（JSON 格式，支持备份和迁移）
 - [x] 历史记录功能（historyStore + electron-store）
 - [x] 历史页面（History.tsx）
 

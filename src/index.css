@@ -754,6 +754,47 @@ body {
   overflow: hidden;
 }
 
+.favorites-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.favorites-header .page-title {
+  margin-bottom: 0;
+}
+
+.favorites-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.favorites-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.favorites-action-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-bg);
+}
+
+.favorites-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .favorites-list {
   flex: 1;
   overflow-y: auto;

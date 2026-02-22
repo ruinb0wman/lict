@@ -1,6 +1,6 @@
 // 预加载脚本暴露的 API 类型声明
 
-import type { HistoryItem } from './index'
+import type { HistoryItem, FavoriteWord } from './index'
 
 declare global {
   interface Window {
@@ -30,6 +30,22 @@ declare global {
     }
     electronClipboard: {
       onClipboardContent: (callback: (text: string) => void) => () => void
+    }
+    electronFavorites: {
+      export: (favorites: FavoriteWord[]) => Promise<{
+        success: boolean
+        cancelled?: boolean
+        filePath?: string
+        error?: string
+      }>
+      import: () => Promise<{
+        success: boolean
+        cancelled?: boolean
+        favorites?: FavoriteWord[]
+        totalCount?: number
+        validCount?: number
+        error?: string
+      }>
     }
   }
 }

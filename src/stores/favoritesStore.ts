@@ -31,6 +31,10 @@ interface FavoritesState {
   updateReviewStatus: (id: string, known: boolean) => Promise<void>
   // 获取今日复习进度
   getTodayReviewProgress: () => { total: number; reviewed: number }
+  // 导出收藏
+  exportFavorites: () => Promise<void>
+  // 导入收藏
+  importFavorites: () => Promise<{ imported: number; skipped: number }>
 }
 
 // 获取主要翻译（用于列表展示）
@@ -227,6 +231,106 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     return {
       total: favorites.length,
       reviewed,
+    }
+  },
+
+  // 导出收藏
+  exportFavorites: async () => {
+    const { favorites } = get()
+    
+    if (favorites.length === 0) {
+      setTimeout(() => {
+        useAppStore.getState().showToast('没有可导出的收藏', 'warning')
+      }, 0)
+      return
+    }
+
+    try {
+      const result = await window.electronFavorites.export(favorites)
+      
+      if (result.cancelled) {
+        return
+      }
+      
+      if (result.success && result.filePath) {
+        setTimeout(() => {
+          useAppStore.getState().showToast(`已导出 ${favorites.length} 个收藏`, 'success')
+        }, 0)
+      } else {
+        setTimeout(() => {
+          useAppStore.getState().showToast(result.error || '导出失败', 'error')
+        }, 0)
+      }
+    } catch (error) {
+      console.error('Export favorites failed:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('导出失败', 'error')
+      }, 0)
+    }
+  },
+
+  // 导入收藏
+  importFavorites: async () => {
+    try {
+      const result = await window.electronFavorites.import()
+      
+      if (result.cancelled) {
+        return { imported: 0, skipped: 0 }
+      }
+      
+      if (!result.success || !result.favorites) {
+        setTimeout(() => {
+          useAppStore.getState().showToast(result.error || '导入失败', 'error')
+        }, 0)
+        return { imported: 0, skipped: 0 }
+      }
+
+      const { favorites: currentFavorites } = get()
+      const existingWords = new Set(currentFavorites.map(f => f.word.toLowerCase()))
+      
+      let imported = 0
+      let skipped = 0
+
+      for (const favorite of result.favorites) {
+        // 检查是否已存在
+        if (existingWords.has(favorite.word.toLowerCase())) {
+          skipped++
+          continue
+        }
+
+        try {
+          // 添加新收藏，重新生成 ID 避免冲突
+          const newFavorite: FavoriteWord = {
+            ...favorite,
+            id: crypto.randomUUID(),
+            createdAt: Date.now(),
+          }
+          await indexedDBService.addFavorite(newFavorite)
+          imported++
+        } catch (error) {
+          console.error(`Failed to import favorite "${favorite.word}":`, error)
+          skipped++
+        }
+      }
+
+      // 重新加载收藏列表
+      await get().loadFavorites()
+
+      setTimeout(() => {
+        if (imported > 0) {
+          useAppStore.getState().showToast(`成功导入 ${imported} 个收藏${skipped > 0 ? `，跳过 ${skipped} 个重复` : ''}`, 'success')
+        } else {
+          useAppStore.getState().showToast(`没有新收藏可导入${skipped > 0 ? `（${skipped} 个重复）` : ''}`, 'warning')
+        }
+      }, 0)
+
+      return { imported, skipped }
+    } catch (error) {
+      console.error('Import favorites failed:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('导入失败', 'error')
+      }, 0)
+      return { imported: 0, skipped: 0 }
     }
   },
 }))
