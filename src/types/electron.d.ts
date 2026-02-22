@@ -34,9 +34,6 @@ declare global {
     electronClipboard: {
       onClipboardContent: (callback: (text: string) => void) => () => void
     }
-    electronShortcut: {
-      onShortcutFailed: (callback: (failedShortcut: string, fallbackShortcut: string) => void) => () => void
-    }
   }
 }
 

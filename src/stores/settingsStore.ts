@@ -25,7 +25,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         model: (savedSettings.model as string) || defaultSettings.model,
         temperature: (savedSettings.temperature as number) ?? defaultSettings.temperature,
         historyLimit: (savedSettings.historyLimit as number) || defaultSettings.historyLimit,
-        shortcut: (savedSettings.shortcut as string) || defaultSettings.shortcut,
+
         isLoading: false,
       })
     } catch (error) {
@@ -48,7 +48,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         model: newSettings.model ?? current.model,
         temperature: newSettings.temperature ?? current.temperature,
         historyLimit: newSettings.historyLimit ?? current.historyLimit,
-        shortcut: newSettings.shortcut ?? current.shortcut,
+
       }
       await window.electronStore.setSettings(merged)
       set({ ...merged, isLoading: false })

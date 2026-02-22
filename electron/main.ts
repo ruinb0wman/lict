@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, globalShortcut, clipboard, Tray, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, clipboard, Tray, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -107,7 +107,7 @@ function createWindow() {
     maximizable: false,
     titleBarStyle: 'hidden',
     show: false, // 初始不显示窗口，等托盘准备好后再显示
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -153,11 +153,10 @@ function createWindow() {
 // ==================== 系统托盘 ====================
 
 function createTray() {
-  // 根据平台选择图标格式（Linux 需要 PNG，其他平台可以使用 SVG）
-  const iconFileName = process.platform === 'linux' ? 'icon.png' : 'electron-vite.svg'
+  // 使用 book-a.png 作为托盘图标
   const iconPath = VITE_DEV_SERVER_URL
-    ? path.join(process.env.VITE_PUBLIC, iconFileName)
-    : path.join(RENDERER_DIST, iconFileName)
+    ? path.join(process.env.VITE_PUBLIC, 'icon.png')
+    : path.join(RENDERER_DIST, 'book-a.png')
 
   tray = new Tray(iconPath)
   tray.setToolTip('Dict - AI 词典工具')
@@ -356,83 +355,43 @@ function sendClipboardContent() {
   win.webContents.send('clipboard:content', text)
 }
 
-// 注册全局快捷键
-function registerGlobalShortcut() {
-  // 获取设置中的快捷键，默认 Alt+D
-  const settings = store.get('settings', {}) as { shortcut?: string }
-  const shortcut = settings.shortcut || 'Alt+D'
+// 标记应用是否正在退出
+let isQuitting = false
 
-  // 先注销已注册的快捷键
-  globalShortcut.unregisterAll()
+// ==================== 单例锁 ====================
+// 请求单例锁，确保只有一个应用实例在运行
+// 在 Wayland 环境下（如 niri），可以通过配置快捷键来 spawn 应用
+// 如果应用已在运行，会触发 second-instance 事件，显示已有窗口
+const gotTheLock = app.requestSingleInstanceLock()
 
-  // 注册新的快捷键
-  const registered = globalShortcut.register(shortcut, () => {
-    if (!win) {
-      createWindow()
-      return
-    }
-
-    if (win.isVisible()) {
-      win.hide()
-    } else {
+if (!gotTheLock) {
+  // 如果没有获得锁，说明已有实例在运行，直接退出
+  console.log('[electron] Another instance is running, quitting...')
+  app.quit()
+} else {
+  // 获得锁，监听第二个实例启动事件
+  app.on('second-instance', () => {
+    console.log('[electron] Second instance started, showing window...')
+    // 当运行第二个实例时，让第一个实例显示窗口
+    if (win) {
+      if (win.isMinimized()) win.restore()
       win.show()
       win.focus()
       // 窗口显示时读取剪切板
       setTimeout(sendClipboardContent, 300)
+    } else {
+      createWindow()
     }
   })
 
-  if (!registered) {
-    console.warn(`Failed to register global shortcut: ${shortcut}`)
-    // 尝试备用快捷键
-    const fallbackShortcut = 'Alt+Shift+D'
-    const fallbackRegistered = globalShortcut.register(fallbackShortcut, () => {
-      if (!win) {
-        createWindow()
-        return
-      }
+  app.whenReady().then(() => {
+    console.log('[electron]', process.versions.electron)
+    createWindow()
+    createTray()
 
-      if (win.isVisible()) {
-        win.hide()
-      } else {
-        win.show()
-        win.focus()
-        setTimeout(sendClipboardContent, 300)
-      }
+    // 监听窗口显示事件，读取剪切板
+    app.on('browser-window-focus', () => {
+      setTimeout(sendClipboardContent, 300)
     })
-
-    console.log('isRegistered:', globalShortcut.isRegistered('CommandOrControl+X'));
-
-    if (fallbackRegistered) {
-      console.info(`Registered fallback shortcut: ${fallbackShortcut}`)
-      // 通知渲染进程主快捷键注册失败
-      if (win) {
-        win.webContents.send('shortcut:failed', shortcut, fallbackShortcut)
-      }
-    }
-  }
-}
-
-// 单例锁
-app.requestSingleInstanceLock()
-
-// 声明自定义属性以支持应用退出标记
-// 标记应用是否正在退出
-let isQuitting = false
-
-app.whenReady().then(() => {
-  console.log('[electron]', process.versions.electron)
-  createWindow()
-  createTray()
-  registerGlobalShortcut()
-
-  // 监听窗口显示事件，读取剪切板
-  app.on('browser-window-focus', () => {
-    setTimeout(sendClipboardContent, 300)
   })
-})
-
-// 应用退出前注销快捷键
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll()
-})
+}

@@ -58,13 +58,4 @@ contextBridge.exposeInMainWorld('electronData', {
   },
 })
 
-// 快捷键 API
-contextBridge.exposeInMainWorld('electronShortcut', {
-  // 监听快捷键注册失败事件
-  onShortcutFailed: (callback: (failedShortcut: string, fallbackShortcut: string) => void) => {
-    const handler = (_: unknown, failedShortcut: string, fallbackShortcut: string) => 
-      callback(failedShortcut, fallbackShortcut)
-    ipcRenderer.on('shortcut:failed', handler)
-    return () => ipcRenderer.off('shortcut:failed', handler)
-  },
-})
+
