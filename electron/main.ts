@@ -406,6 +406,36 @@ function isEnglishText(text: string): boolean {
   return hasLetter && isValidChars
 }
 
+// 检查文本是否为单词（而非句子）
+function isWord(text: string): boolean {
+  const trimmed = text.trim()
+  if (!trimmed) return false
+  
+  // 单词条件：
+  // 1. 不包含空格（句子通常包含空格）
+  // 2. 只包含字母和连字符（如 well-known）
+  // 3. 至少包含一个字母
+  // 4. 长度在合理范围内（1-50个字符）
+  // 5. 不包含句子标点符号（句号、问号、感叹号、逗号、分号、冒号等）
+  
+  const hasSpace = /\s/.test(trimmed)
+  if (hasSpace) return false
+  
+  const hasSentencePunctuation = /[.!?,:;"'()\[\]{}]/.test(trimmed)
+  if (hasSentencePunctuation) return false
+  
+  const hasLetter = /[a-zA-Z]/.test(trimmed)
+  if (!hasLetter) return false
+  
+  const isValidChars = /^[a-zA-Z-]+$/.test(trimmed)
+  if (!isValidChars) return false
+  
+  const length = trimmed.length
+  if (length < 1 || length > 50) return false
+  
+  return true
+}
+
 // 发送剪切板内容到渲染进程
 function sendClipboardContent() {
   if (!win) return
@@ -415,6 +445,9 @@ function sendClipboardContent() {
 
   // 检查是否为英文内容
   if (!isEnglishText(text)) return
+
+  // 检查是否为单词（而非句子），只有单词才自动翻译
+  if (!isWord(text)) return
 
   // 防重复查询：如果与上次相同则不发送
   if (text === lastClipboardText) return
