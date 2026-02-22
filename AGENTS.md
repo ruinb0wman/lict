@@ -18,6 +18,7 @@
 | ⚙️ 自定义配置 | 支持配置大模型 API（OpenAI 通用格式） |
 | ⌨️ 快捷键 | 自定义快捷键快速唤出应用 |
 | 📋 自动读取剪切板 | 自动检测剪切板英文内容并翻译 |
+| 🔊 单词发音 | 点击音标旁的喇叭图标播放单词发音 |
 
 ### 单词查询返回格式
 
@@ -74,6 +75,8 @@
 - `zustand` - 状态管理
 - `uuid` - 生成唯一 ID
 - `dexie` - IndexedDB 封装
+- `google-tts-api` - Google Translate TTS API 封装
+- `play-sound` - 调用系统音频播放器
 
 ## 项目结构
 
@@ -188,6 +191,7 @@ window.electronFavorites.import()                          // 从 JSON 文件导
 | `clipboard:content` | Main → Renderer | 发送剪切板内容 | ✅ 已完成 |
 | `favorites:export` | Renderer → Main | 导出收藏数据 | ✅ 已完成 |
 | `favorites:import` | Renderer → Main | 导入收藏数据 | ✅ 已完成 |
+| `speech:speak` | Renderer → Main | 播放单词发音 | ✅ 已完成 |
 
 ## 界面规范
 
@@ -354,6 +358,7 @@ bun run preview
 
 ### 第三阶段：增强功能 ✅ 已完成
 
+- [x] 单词发音（Google Translate TTS + play-sound）
 - [x] 语句翻译（自动识别单词/句子，不同返回格式）
 - [x] 自动读取剪切板（窗口显示时检测英文内容并自动查询）
 - [x] 复习模式（卡片翻转、认识/不认识、复习统计）

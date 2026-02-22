@@ -61,4 +61,9 @@ contextBridge.exposeInMainWorld('electronFavorites', {
   import: () => ipcRenderer.invoke('favorites:import'),
 })
 
+// 语音播放 API
+contextBridge.exposeInMainWorld('electronSpeech', {
+  speak: (word: string) => ipcRenderer.invoke('speech:speak', word),
+})
+
 

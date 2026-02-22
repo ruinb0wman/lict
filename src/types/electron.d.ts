@@ -47,6 +47,9 @@ declare global {
         error?: string
       }>
     }
+    electronSpeech: {
+      speak: (word: string) => Promise<boolean>
+    }
   }
 }
 

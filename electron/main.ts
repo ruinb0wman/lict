@@ -3,6 +3,10 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import Store from 'electron-store'
+import { getAudioUrl } from 'google-tts-api'
+import playSound from 'play-sound'
+
+const player = playSound({})
 
 // ==================== 类型定义 ====================
 
@@ -264,6 +268,38 @@ ipcMain.handle('history:load', () => {
 ipcMain.handle('history:save', (_, history: HistoryItem[]) => {
   store.set('history', history)
   return true
+})
+
+// 语音播放（使用 Google Translate TTS + play-sound）
+ipcMain.handle('speech:speak', async (_, word: string) => {
+  try {
+    console.log('[Main] 播放单词:', word)
+    
+    // 获取 Google Translate TTS 音频 URL
+    const audioUrl = getAudioUrl(word, {
+      lang: 'en',
+      slow: false,
+      host: 'https://translate.google.com',
+    })
+    
+    console.log('[Main] TTS URL:', audioUrl.substring(0, 100) + '...')
+    
+    return new Promise((resolve, reject) => {
+      // 使用 play-sound 播放音频
+      player.play(audioUrl, (err: Error | null) => {
+        if (err) {
+          console.error('[Main] 语音播放失败:', err)
+          reject(err)
+        } else {
+          console.log('[Main] 语音播放完成')
+          resolve(true)
+        }
+      })
+    })
+  } catch (error) {
+    console.error('[Main] 语音播放异常:', error)
+    throw error
+  }
 })
 
 // 收藏数据导入导出

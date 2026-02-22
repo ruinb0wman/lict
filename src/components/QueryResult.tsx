@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Star, Edit2, Save, X, FileText, Trash2, MessageSquare } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { Star, Edit2, Save, X, FileText, Trash2, MessageSquare, Volume2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { useFavoritesStore } from '@/stores/favoritesStore'
 import { useWordsStore } from '@/stores/wordsStore'
@@ -215,6 +215,196 @@ export function QueryResultView() {
   const { cachedWords, updateWordTranslation, updateWordExamples, addNote } = useWordsStore()
   const [isEditing, setIsEditing] = useState(false)
 
+  // 预加载语音列表（Electron 中 Web Speech API 需要这个）
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) {
+      console.log('[Speak] 浏览器不支持 Web Speech API')
+      return
+    }
+    
+    const synth = window.speechSynthesis
+    
+    // 尝试获取语音列表
+    const voices = synth.getVoices()
+    console.log('[Speak] 初始化语音列表:', voices.length, '个语音')
+    
+    // 如果为空，监听 voiceschanged 事件
+    if (voices.length === 0) {
+      const handleVoicesChanged = () => {
+        const loadedVoices = synth.getVoices()
+        console.log('[Speak] 语音列表已加载:', loadedVoices.length, '个语音')
+        console.log('[Speak] 语音示例:', loadedVoices.slice(0, 3).map(v => `${v.name}(${v.lang})`).join(', '))
+      }
+      
+      synth.onvoiceschanged = handleVoicesChanged
+      
+      // Electron 特殊处理：有些版本需要调用 speak 才能触发加载
+      // 创建一个空的 utterance 来强制加载语音
+      setTimeout(() => {
+        if (synth.getVoices().length === 0) {
+          console.log('[Speak] 尝试强制加载语音...')
+          const dummyUtterance = new SpeechSynthesisUtterance('')
+          dummyUtterance.volume = 0
+          synth.speak(dummyUtterance)
+          synth.cancel()
+        }
+      }, 100)
+      
+      return () => {
+        synth.onvoiceschanged = null
+      }
+    }
+  }, [])
+  
+  // 使用 Electron 主进程 TTS 作为备选方案（通过 IPC 调用 Node.js say 模块）
+  const speakWithElectronTTS = useCallback(async (word: string) => {
+    console.log('[Speak] 使用 Electron TTS 播放:', word)
+    
+    try {
+      if (window.electronSpeech) {
+        await window.electronSpeech.speak(word)
+        console.log('[Speak] ✅ Electron TTS 播放成功')
+      } else {
+        console.error('[Speak] ❌ electronSpeech API 不可用')
+      }
+    } catch (err) {
+      console.error('[Speak] ❌ Electron TTS 播放失败:', err)
+    }
+  }, [])
+  
+  // 使用 Web Speech API 播放单词发音
+  const speakWord = useCallback((word: string) => {
+    console.log('[Speak] ========================================')
+    console.log('[Speak] 尝试播放单词:', word)
+    
+    if (!('speechSynthesis' in window)) {
+      console.error('[Speak] 当前浏览器不支持 Web Speech API，尝试在线 TTS')
+      speakWithElectronTTS(word)
+      return
+    }
+    
+    const synth = window.speechSynthesis
+    
+    // 获取语音列表
+    let voices = synth.getVoices()
+    console.log('[Speak] 初始语音列表数量:', voices.length)
+    
+    // 如果语音列表为空，尝试等待加载
+    if (voices.length === 0) {
+      console.log('[Speak] 语音列表为空，尝试重新加载...')
+      // 触发语音加载
+      synth.onvoiceschanged = () => {
+        console.log('[Speak] 语音列表加载完成事件触发')
+      }
+      // 某些 Electron 版本需要 cancel() 来触发加载
+      synth.cancel()
+      voices = synth.getVoices()
+      console.log('[Speak] 重新加载后语音数量:', voices.length)
+    }
+    
+    // 如果没有可用语音，使用 Electron TTS 备选方案
+    if (voices.length === 0) {
+      console.warn('[Speak] 没有本地语音可用，切换到 Electron TTS')
+      speakWithElectronTTS(word)
+      return
+    }
+    
+    console.log('[Speak] SpeechSynthesis 状态:', {
+      pending: synth.pending,
+      speaking: synth.speaking,
+      paused: synth.paused,
+      voicesCount: voices.length
+    })
+    
+    // 打印所有可用语音（用于调试）
+    const voiceList = voices.slice(0, 10).map(v => `${v.name}(${v.lang})`).join(', ')
+    console.log('[Speak] 可用语音(前10):', voiceList, voices.length > 10 ? `...等共${voices.length}个` : '')
+    
+    // 选择英语语音，优先选择 Google US English 或 Microsoft 语音
+    let selectedVoice = voices.find(v => 
+      v.name.includes('Google US English') || 
+      v.name.includes('Microsoft David') ||
+      v.name.includes('Microsoft Zira')
+    ) || voices.find(v => v.lang.startsWith('en'))
+    
+    // 如果还是没有，使用第一个可用语音
+    if (!selectedVoice && voices.length > 0) {
+      selectedVoice = voices[0]
+    }
+    
+    console.log('[Speak] 选择的语音:', selectedVoice ? `${selectedVoice.name} (${selectedVoice.lang})` : '无')
+    
+    // 取消正在播放的语音
+    synth.cancel()
+    console.log('[Speak] 已取消之前的播放')
+    
+    const utterance = new SpeechSynthesisUtterance(word)
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+      console.log('[Speak] 已设置语音')
+    }
+    
+    utterance.lang = 'en-US'
+    utterance.rate = 0.9
+    utterance.pitch = 1
+    utterance.volume = 1
+    
+    // 添加事件监听
+    utterance.onstart = () => console.log('[Speak] ✅ 开始播放')
+    utterance.onend = () => console.log('[Speak] ✅ 播放结束')
+    utterance.onerror = (event) => {
+      console.error('[Speak] ❌ 播放错误:', event.error)
+      console.error('[Speak] 错误详情:', {
+        error: event.error,
+        charIndex: event.charIndex,
+        elapsedTime: event.elapsedTime,
+        name: event.name
+      })
+      // 如果本地播放失败，尝试 Electron TTS
+      if (event.error !== 'canceled') {
+        console.log('[Speak] 本地播放失败，尝试 Electron TTS')
+        speakWithElectronTTS(word)
+      }
+    }
+    utterance.onpause = () => console.log('[Speak] 播放暂停')
+    utterance.onresume = () => console.log('[Speak] 播放恢复')
+    utterance.onboundary = (event) => console.log('[Speak] 边界事件:', event.name, 'at', event.charIndex)
+    
+    console.log('[Speak] 调用 speak()...')
+    synth.speak(utterance)
+    
+    // 检查是否成功加入队列
+    setTimeout(() => {
+      console.log('[Speak] 500ms后状态:', {
+        pending: synth.pending,
+        speaking: synth.speaking,
+        paused: synth.paused
+      })
+      
+      // 如果既没有 pending 也没有 speaking，可能是失败了
+      if (!synth.pending && !synth.speaking) {
+        console.error('[Speak] ❌ 语音可能没有成功播放（pending和speaking都为false）')
+        console.log('[Speak] 尝试使用 Electron TTS 备选方案')
+        speakWithElectronTTS(word)
+      }
+    }, 500)
+    
+    // Electron 中的特殊处理：定时 resume 以防止语音被挂起
+    const resumeInterval = setInterval(() => {
+      if (synth.paused) {
+        console.log('[Speak] 检测到暂停状态，尝试恢复')
+        synth.resume()
+      }
+      if (!synth.speaking && !synth.pending) {
+        clearInterval(resumeInterval)
+      }
+    }, 100)
+    
+    // 5秒后清理定时器
+    setTimeout(() => clearInterval(resumeInterval), 5000)
+  }, [speakWithElectronTTS])
+
   // 从缓存获取当前单词的完整数据（包含批注）
   const getCachedWordData = (word: string) => {
     return cachedWords.find(w => w.word.toLowerCase() === word.toLowerCase())
@@ -323,6 +513,13 @@ export function QueryResultView() {
         {wordResult.phonetic && (
           <div className="word-phonetic">
             <span>{wordResult.phonetic}</span>
+            <button 
+              className="speak-btn"
+              title="播放发音"
+              onClick={() => speakWord(wordResult.word)}
+            >
+              <Volume2 size={16} strokeWidth={1.5} />
+            </button>
           </div>
         )}
       </div>
