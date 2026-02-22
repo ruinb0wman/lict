@@ -5,11 +5,11 @@ import { useAppStore } from '@/stores/appStore'
 import type { FavoriteWord } from '@/types'
 
 export function Favorites() {
-  const { 
-    isLoading, 
-    searchQuery, 
-    loadFavorites, 
-    removeFavorite, 
+  const {
+    isLoading,
+    searchQuery,
+    loadFavorites,
+    removeFavorite,
     setSearchQuery,
     getFilteredFavorites,
     exportFavorites,
@@ -76,7 +76,7 @@ export function Favorites() {
             title="导入收藏"
             disabled={isLoading}
           >
-            <Upload size={18} strokeWidth={1.5} />
+            <Download size={18} strokeWidth={1.5} />
           </button>
           <button
             className="favorites-action-btn"
@@ -84,7 +84,7 @@ export function Favorites() {
             title="导出收藏"
             disabled={isLoading || favorites.length === 0}
           >
-            <Download size={18} strokeWidth={1.5} />
+            <Upload size={18} strokeWidth={1.5} />
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@ export function Favorites() {
         ) : (
           filteredFavorites.map((favorite) => (
             <div key={favorite.id} className="favorite-item">
-              <div 
+              <div
                 className="favorite-content"
                 onClick={() => handleWordClick(favorite)}
               >
