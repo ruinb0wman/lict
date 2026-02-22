@@ -1,6 +1,6 @@
 // 预加载脚本暴露的 API 类型声明
 
-import type { FavoriteWord, HistoryItem } from './index'
+import type { HistoryItem } from './index'
 
 declare global {
   interface Window {
@@ -22,10 +22,7 @@ declare global {
     }
     electronData: {
       getPath: () => Promise<string>
-      favorites: {
-        load: () => Promise<FavoriteWord[]>
-        save: (favorites: FavoriteWord[]) => Promise<boolean>
-      }
+      // 收藏功能现在使用 IndexedDB，不再需要 IPC
       history: {
         load: () => Promise<HistoryItem[]>
         save: (history: HistoryItem[]) => Promise<boolean>

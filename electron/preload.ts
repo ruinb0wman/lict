@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
-import type { FavoriteWord, HistoryItem } from '../src/types'
+import type { HistoryItem } from '../src/types'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -48,10 +48,7 @@ contextBridge.exposeInMainWorld('electronStore', {
 // 数据存储 API
 contextBridge.exposeInMainWorld('electronData', {
   getPath: () => ipcRenderer.invoke('data:getPath'),
-  favorites: {
-    load: () => ipcRenderer.invoke('favorites:load'),
-    save: (favorites: FavoriteWord[]) => ipcRenderer.invoke('favorites:save', favorites),
-  },
+  // 收藏功能现在使用 IndexedDB，不再需要 IPC
   history: {
     load: () => ipcRenderer.invoke('history:load'),
     save: (history: HistoryItem[]) => ipcRenderer.invoke('history:save', history),

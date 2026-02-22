@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, screen, clipboard, Tray, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import fs from 'node:fs'
 import Store from 'electron-store'
 
 // ==================== 类型定义 ====================
@@ -30,15 +29,6 @@ type SentenceTranslation = {
 
 type QueryResponse = QueryResult | SentenceTranslation
 
-type FavoriteWord = {
-  id: string
-  word: string
-  translation: string
-  phonetic?: string
-  createdAt: number
-  queryData: QueryResult
-}
-
 type HistoryItemType = 'word' | 'sentence'
 
 type HistoryItem = {
@@ -56,6 +46,7 @@ const store = new Store<{
   windowX?: number
   windowY?: number
   settings?: Record<string, unknown>
+  history?: HistoryItem[]
 }>()
 
 // The built directory structure
@@ -210,43 +201,9 @@ function toggleWindow() {
 }
 
 // ==================== 数据文件存储 ====================
-
+// 历史记录现在使用 electron-store 存储，不再需要 JSON 文件
+// 保留 data:getPath 以保持兼容性
 const DATA_DIR = path.join(app.getPath('userData'), 'dict-data')
-const FAVORITES_FILE = path.join(DATA_DIR, 'favorites.json')
-const HISTORY_FILE = path.join(DATA_DIR, 'history.json')
-
-// 确保数据目录存在
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
-}
-
-// 读取 JSON 文件
-function readJsonFile<T>(filePath: string, defaultValue: T): T {
-  try {
-    if (!fs.existsSync(filePath)) {
-      return defaultValue
-    }
-    const content = fs.readFileSync(filePath, 'utf-8')
-    return JSON.parse(content) as T
-  } catch (error) {
-    console.error(`Failed to read ${filePath}:`, error)
-    return defaultValue
-  }
-}
-
-// 写入 JSON 文件
-function writeJsonFile<T>(filePath: string, data: T): boolean {
-  try {
-    ensureDataDir()
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
-    return true
-  } catch (error) {
-    console.error(`Failed to write ${filePath}:`, error)
-    return false
-  }
-}
 
 // ==================== IPC 处理器 ====================
 
@@ -286,22 +243,14 @@ ipcMain.handle('data:getPath', () => {
   return DATA_DIR
 })
 
-// 收藏数据管理
-ipcMain.handle('favorites:load', () => {
-  return readJsonFile<FavoriteWord[]>(FAVORITES_FILE, [])
-})
-
-ipcMain.handle('favorites:save', (_, favorites: FavoriteWord[]) => {
-  return writeJsonFile(FAVORITES_FILE, favorites)
-})
-
-// 历史数据管理
+// 历史数据管理（使用 electron-store）
 ipcMain.handle('history:load', () => {
-  return readJsonFile<HistoryItem[]>(HISTORY_FILE, [])
+  return store.get('history', [])
 })
 
 ipcMain.handle('history:save', (_, history: HistoryItem[]) => {
-  return writeJsonFile(HISTORY_FILE, history)
+  store.set('history', history)
+  return true
 })
 
 // 应用生命周期

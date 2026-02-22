@@ -174,11 +174,11 @@ window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 | `settings:get` | Renderer → Main | 获取设置 | ✅ 已完成 |
 | `settings:set` | Renderer → Main | 保存设置 | ✅ 已完成 |
 | `data:getPath` | Renderer → Main | 获取用户数据目录 | ✅ 已完成 |
-| `favorites:load` | Renderer → Main | 加载收藏数据 | ✅ 已完成 |
-| `favorites:save` | Renderer → Main | 保存收藏数据 | ✅ 已完成 |
+| `favorites:load` | Renderer → Main | 加载收藏数据 | 🗑️ 已移除（使用 IndexedDB） |
+| `favorites:save` | Renderer → Main | 保存收藏数据 | 🗑️ 已移除（使用 IndexedDB） |
 | `history:load` | Renderer → Main | 加载历史数据 | ✅ 已完成 |
 | `history:save` | Renderer → Main | 保存历史数据 | ✅ 已完成 |
-| `clipboard:content` | Main → Renderer | 发送剪切板内容 | ⏳ 待实现 |
+| `clipboard:content` | Main → Renderer | 发送剪切板内容 | ✅ 已完成 |
 
 ## 界面规范
 
@@ -207,19 +207,24 @@ window.ipcRenderer.invoke(channel, ...args) // 异步调用主进程
 
 ## 数据存储
 
-### 配置存储
-使用 `electron-store`，存储路径由库自动管理。
+### 存储方案
 
-### 收藏和历史存储
-使用 JSON 文件存储在用户数据目录：
+| 数据类型 | 存储方式 | 说明 |
+|---------|---------|------|
+| 收藏单词 | IndexedDB (Dexie.js) | 浏览器端数据库，在渲染进程中直接操作 |
+| 查询历史 | electron-store | 用户数据目录，通过 IPC 读写 |
+| 用户配置 | electron-store | 用户数据目录，通过 IPC 读写 |
+
+### 配置和历史存储
+使用 `electron-store`，存储路径由库自动管理：
 
 ```
 用户数据目录/
-├── favorites.json      # 收藏单词
-└── history.json        # 查询历史
+└── config.json         # 用户配置和查询历史
 ```
 
-通过 IPC 在主进程中读写文件。
+### 收藏存储
+使用 IndexedDB + Dexie.js，在渲染进程中直接操作，数据存储在浏览器内部存储中。
 
 ## 常用命令
 
@@ -332,10 +337,9 @@ bun run preview
 
 ### 第二阶段：数据功能 ✅ 已完成
 
-- [x] 本地数据存储 IPC 接口
-- [x] 收藏功能（favoritesStore）
+- [x] 收藏功能（favoritesStore + IndexedDB/Dexie）
 - [x] 收藏页面（Favorites.tsx）
-- [x] 历史记录功能（historyStore）
+- [x] 历史记录功能（historyStore + electron-store）
 - [x] 历史页面（History.tsx）
 
 ### 第三阶段：增强功能 ✅ 已完成

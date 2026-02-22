@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { FavoriteWord, QueryResult } from '@/types'
+import { indexedDBService } from '@/utils/indexedDB'
 import { useAppStore } from '@/stores/appStore'
 
 interface FavoritesState {
@@ -9,8 +10,6 @@ interface FavoritesState {
   
   // 加载收藏
   loadFavorites: () => Promise<void>
-  // 保存收藏
-  saveFavorites: (favorites: FavoriteWord[]) => Promise<void>
   // 添加收藏
   addFavorite: (word: string, queryData: QueryResult) => Promise<void>
   // 取消收藏
@@ -61,7 +60,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   loadFavorites: async () => {
     set({ isLoading: true })
     try {
-      const data = await window.electronData.favorites.load()
+      const data = await indexedDBService.getAllFavorites()
       set({ favorites: data, isLoading: false })
     } catch (error) {
       console.error('Failed to load favorites:', error)
@@ -69,19 +68,6 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       // 使用 setTimeout 避免 Zustand 的无限循环警告
       setTimeout(() => {
         useAppStore.getState().showToast('加载收藏失败', 'error')
-      }, 0)
-    }
-  },
-
-  // 保存收藏
-  saveFavorites: async (favorites) => {
-    try {
-      await window.electronData.favorites.save(favorites)
-      set({ favorites })
-    } catch (error) {
-      console.error('Failed to save favorites:', error)
-      setTimeout(() => {
-        useAppStore.getState().showToast('保存收藏失败', 'error')
       }, 0)
     }
   },
@@ -97,7 +83,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
 
     const newFavorite: FavoriteWord = {
       id: crypto.randomUUID(),
-      word,
+      word: word.toLowerCase(),
       translation: getPrimaryTranslation(queryData),
       phonetic: queryData.phonetic,
       createdAt: Date.now(),
@@ -106,22 +92,37 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       masteryLevel: 0,
     }
 
-    const newFavorites = [newFavorite, ...favorites]
-    await get().saveFavorites(newFavorites)
-    setTimeout(() => {
-      useAppStore.getState().showToast(`已收藏 "${word}"`, 'success')
-    }, 0)
+    try {
+      await indexedDBService.addFavorite(newFavorite)
+      set({ favorites: [newFavorite, ...favorites] })
+      setTimeout(() => {
+        useAppStore.getState().showToast(`已收藏 "${word}"`, 'success')
+      }, 0)
+    } catch (error) {
+      console.error('Failed to add favorite:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('添加收藏失败', 'error')
+      }, 0)
+    }
   },
 
   // 取消收藏
   removeFavorite: async (id) => {
     const { favorites } = get()
     const favorite = favorites.find(f => f.id === id)
-    const newFavorites = favorites.filter(f => f.id !== id)
-    await get().saveFavorites(newFavorites)
-    if (favorite) {
+    
+    try {
+      await indexedDBService.removeFavorite(id)
+      set({ favorites: favorites.filter(f => f.id !== id) })
+      if (favorite) {
+        setTimeout(() => {
+          useAppStore.getState().showToast(`已取消收藏 "${favorite.word}"`, 'info')
+        }, 0)
+      }
+    } catch (error) {
+      console.error('Failed to remove favorite:', error)
       setTimeout(() => {
-        useAppStore.getState().showToast(`已取消收藏 "${favorite.word}"`, 'info')
+        useAppStore.getState().showToast('取消收藏失败', 'error')
       }, 0)
     }
   },
@@ -180,26 +181,36 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
   // 更新单词复习状态
   updateReviewStatus: async (id, known) => {
     const { favorites } = get()
-    const newFavorites = favorites.map(f => {
-      if (f.id === id) {
-        const newReviewCount = f.reviewCount + 1
-        // 更新掌握程度：认识 +1，不认识 -1（最低为0）
-        let newMasteryLevel = f.masteryLevel + (known ? 1 : -1)
-        newMasteryLevel = Math.max(0, Math.min(5, newMasteryLevel))
-        
-        return {
-          ...f,
-          reviewCount: newReviewCount,
-          lastReviewedAt: Date.now(),
-          masteryLevel: newMasteryLevel,
-        }
-      }
-      return f
-    })
-    await get().saveFavorites(newFavorites)
-    setTimeout(() => {
-      useAppStore.getState().showToast(known ? '已标记为认识' : '已标记为不认识', 'success', 1500)
-    }, 0)
+    const favorite = favorites.find(f => f.id === id)
+    if (!favorite) return
+
+    const newReviewCount = favorite.reviewCount + 1
+    // 更新掌握程度：认识 +1，不认识 -1（最低为0）
+    let newMasteryLevel = favorite.masteryLevel + (known ? 1 : -1)
+    newMasteryLevel = Math.max(0, Math.min(5, newMasteryLevel))
+
+    const updates = {
+      reviewCount: newReviewCount,
+      lastReviewedAt: Date.now(),
+      masteryLevel: newMasteryLevel,
+    }
+
+    try {
+      await indexedDBService.updateFavorite(id, updates)
+      set({
+        favorites: favorites.map(f =>
+          f.id === id ? { ...f, ...updates } : f
+        )
+      })
+      setTimeout(() => {
+        useAppStore.getState().showToast(known ? '已标记为认识' : '已标记为不认识', 'success', 1500)
+      }, 0)
+    } catch (error) {
+      console.error('Failed to update review status:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('更新复习状态失败', 'error')
+      }, 0)
+    }
   },
 
   // 获取今日复习进度

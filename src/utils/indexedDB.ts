@@ -1,13 +1,14 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { WordEntry, QueryResult } from '@/types'
+import { WordEntry, QueryResult, FavoriteWord } from '@/types'
 
 // 定义 Dexie 数据库
 interface DictDB extends Dexie {
   words: EntityTable<WordEntry, 'id'>
+  favorites: EntityTable<FavoriteWord, 'id'>
 }
 
 const DB_NAME = 'DictDB'
-const DB_VERSION = 1
+const DB_VERSION = 2  // 升级数据库版本以添加 favorites 表
 
 export class IndexedDBService {
   private db: DictDB
@@ -17,7 +18,8 @@ export class IndexedDBService {
 
     // 定义数据库结构
     this.db.version(DB_VERSION).stores({
-      words: 'id, word, updatedAt'
+      words: 'id, word, updatedAt',
+      favorites: 'id, word, createdAt'
     })
   }
 
@@ -113,6 +115,42 @@ export class IndexedDBService {
       translation: wordEntry.translation,
       example: wordEntry.example,
     }
+  }
+
+  // ==================== 收藏相关方法 ====================
+
+  // 获取所有收藏（按收藏时间倒序）
+  async getAllFavorites(): Promise<FavoriteWord[]> {
+    return this.db.favorites.orderBy('createdAt').reverse().toArray()
+  }
+
+  // 根据单词获取收藏
+  async getFavoriteByWord(word: string): Promise<FavoriteWord | undefined> {
+    return this.db.favorites.get({ word: word.toLowerCase() })
+  }
+
+  // 添加收藏
+  async addFavorite(favorite: FavoriteWord): Promise<void> {
+    await this.db.favorites.put(favorite)
+  }
+
+  // 删除收藏
+  async removeFavorite(id: string): Promise<void> {
+    await this.db.favorites.delete(id)
+  }
+
+  // 更新收藏
+  async updateFavorite(id: string, updates: Partial<FavoriteWord>): Promise<void> {
+    const favorite = await this.db.favorites.get(id)
+    if (favorite) {
+      await this.db.favorites.put({ ...favorite, ...updates })
+    }
+  }
+
+  // 检查单词是否已收藏
+  async isFavorite(word: string): Promise<boolean> {
+    const count = await this.db.favorites.where({ word: word.toLowerCase() }).count()
+    return count > 0
   }
 }
 
