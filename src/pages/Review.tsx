@@ -4,17 +4,17 @@ import { useFavoritesStore } from '@/stores/favoritesStore'
 import type { FavoriteWord } from '@/types'
 
 // 复习卡片组件
-function ReviewCard({ 
-  word, 
-  isFlipped, 
-  onFlip 
-}: { 
+function ReviewCard({
+  word,
+  isFlipped,
+  onFlip
+}: {
   word: FavoriteWord
   isFlipped: boolean
-  onFlip: () => void 
+  onFlip: () => void
 }) {
   return (
-    <div 
+    <div
       className="review-card-container"
       onClick={onFlip}
     >
@@ -41,7 +41,7 @@ function ReviewCard({
             <div className="review-translation">
               <span className="review-translation-text">{word.translation}</span>
             </div>
-            
+
             {/* 例句 */}
             {word.queryData.example && word.queryData.example.length > 0 && (
               <div className="review-examples">
@@ -55,14 +55,14 @@ function ReviewCard({
               </div>
             )}
           </div>
-          
+
           {/* 掌握程度指示器 */}
           <div className="review-mastery">
             <span className="review-mastery-label">掌握程度</span>
             <div className="review-mastery-dots">
               {[0, 1, 2, 3, 4].map((level) => (
-                <span 
-                  key={level} 
+                <span
+                  key={level}
                   className={`review-mastery-dot ${level < word.masteryLevel ? 'active' : ''}`}
                 />
               ))}
@@ -122,7 +122,7 @@ export function Review() {
   }, [favorites, getReviewWords])
 
   const currentWord = reviewWords[currentIndex]
-  
+
   // 计算今日复习进度
   const todayReviewedCount = favorites.filter(f => {
     if (!f.lastReviewedAt) return false
@@ -140,7 +140,7 @@ export function Review() {
   const handleKnown = useCallback(async () => {
     if (!currentWord) return
     await updateReviewStatus(currentWord.id, true)
-    
+
     if (currentIndex < reviewWords.length - 1) {
       setIsFlipped(false)
       setTimeout(() => setCurrentIndex(prev => prev + 1), 150)
@@ -153,7 +153,7 @@ export function Review() {
   const handleUnknown = useCallback(async () => {
     if (!currentWord) return
     await updateReviewStatus(currentWord.id, false)
-    
+
     if (currentIndex < reviewWords.length - 1) {
       setIsFlipped(false)
       setTimeout(() => setCurrentIndex(prev => prev + 1), 150)
@@ -238,7 +238,7 @@ export function Review() {
           </span>
         </div>
         <div className="review-progress-track">
-          <div 
+          <div
             className="review-progress-fill"
             style={{ width: `${((currentIndex + 1) / reviewWords.length) * 100}%` }}
           />
@@ -246,29 +246,31 @@ export function Review() {
       </div>
 
       {/* 复习卡片 */}
-      <div className="review-card-wrapper">
-        <ReviewCard 
-          word={currentWord} 
+      <div className="review-card-wrapper" style={{ marginTop: 10 }}>
+        <ReviewCard
+          word={currentWord}
           isFlipped={isFlipped}
           onFlip={handleFlip}
         />
       </div>
 
       {/* 操作按钮 */}
-      <div className="review-actions">
+      <div className="review-actions" style={{ marginTop: 10 }}>
         {!isFlipped ? (
           // 未翻转时：显示翻转按钮和跳过按钮
           <>
-            <button 
+            <button
               className="review-btn review-btn-skip"
               onClick={handleSkip}
+              style={{ height: 30 }}
             >
               <ChevronRight size={18} strokeWidth={1.5} />
               跳过
             </button>
-            <button 
+            <button
               className="review-btn review-btn-flip"
               onClick={handleFlip}
+              style={{ height: 30 }}
             >
               <RotateCcw size={18} strokeWidth={1.5} />
               翻转卡片
@@ -277,16 +279,18 @@ export function Review() {
         ) : (
           // 翻转后：显示认识/不认识按钮
           <>
-            <button 
+            <button
               className="review-btn review-btn-unknown"
               onClick={handleUnknown}
+              style={{ height: 30 }}
             >
               <X size={18} strokeWidth={1.5} />
               不认识
             </button>
-            <button 
+            <button
               className="review-btn review-btn-known"
               onClick={handleKnown}
+              style={{ height: 30 }}
             >
               <Check size={18} strokeWidth={1.5} />
               认识
@@ -296,7 +300,7 @@ export function Review() {
       </div>
 
       {/* 键盘快捷键提示 */}
-      <div className="review-shortcuts">
+      <div className="review-shortcuts" >
         <span className="review-shortcut">
           <kbd>Space</kbd> 翻转
         </span>
