@@ -77,10 +77,10 @@ function createWindow() {
   // 获取保存的窗口位置或使用默认位置（屏幕中心）
   const savedX = store.get('windowX')
   const savedY = store.get('windowY')
-  
+
   let x: number | undefined
   let y: number | undefined
-  
+
   if (savedX !== undefined && savedY !== undefined) {
     x = savedX
     y = savedY
@@ -146,7 +146,7 @@ function createWindow() {
   } else {
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
-  
+
   return win
 }
 
@@ -155,13 +155,13 @@ function createWindow() {
 function createTray() {
   // 根据平台选择图标格式（Linux 需要 PNG，其他平台可以使用 SVG）
   const iconFileName = process.platform === 'linux' ? 'icon.png' : 'electron-vite.svg'
-  const iconPath = VITE_DEV_SERVER_URL 
+  const iconPath = VITE_DEV_SERVER_URL
     ? path.join(process.env.VITE_PUBLIC, iconFileName)
     : path.join(RENDERER_DIST, iconFileName)
-  
+
   tray = new Tray(iconPath)
   tray.setToolTip('Dict - AI 词典工具')
-  
+
   // 创建右键菜单
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -179,14 +179,14 @@ function createTray() {
       }
     }
   ])
-  
+
   tray.setContextMenu(contextMenu)
-  
+
   // 左键点击托盘图标切换窗口显示/隐藏
   tray.on('click', () => {
     toggleWindow()
   })
-  
+
   // macOS 上双击托盘图标也切换窗口
   tray.on('double-click', () => {
     toggleWindow()
@@ -199,7 +199,7 @@ function toggleWindow() {
     createWindow()
     return
   }
-  
+
   if (win.isVisible()) {
     win.hide()
   } else {
@@ -342,16 +342,16 @@ function isEnglishText(text: string): boolean {
 // 发送剪切板内容到渲染进程
 function sendClipboardContent() {
   if (!win) return
-  
+
   const text = clipboard.readText().trim()
   if (!text) return
-  
+
   // 检查是否为英文内容
   if (!isEnglishText(text)) return
-  
+
   // 防重复查询：如果与上次相同则不发送
   if (text === lastClipboardText) return
-  
+
   lastClipboardText = text
   win.webContents.send('clipboard:content', text)
 }
@@ -361,17 +361,17 @@ function registerGlobalShortcut() {
   // 获取设置中的快捷键，默认 Alt+D
   const settings = store.get('settings', {}) as { shortcut?: string }
   const shortcut = settings.shortcut || 'Alt+D'
-  
+
   // 先注销已注册的快捷键
   globalShortcut.unregisterAll()
-  
+
   // 注册新的快捷键
   const registered = globalShortcut.register(shortcut, () => {
     if (!win) {
       createWindow()
       return
     }
-    
+
     if (win.isVisible()) {
       win.hide()
     } else {
@@ -381,21 +381,51 @@ function registerGlobalShortcut() {
       setTimeout(sendClipboardContent, 300)
     }
   })
-  
+
   if (!registered) {
     console.warn(`Failed to register global shortcut: ${shortcut}`)
+    // 尝试备用快捷键
+    const fallbackShortcut = 'Alt+Shift+D'
+    const fallbackRegistered = globalShortcut.register(fallbackShortcut, () => {
+      if (!win) {
+        createWindow()
+        return
+      }
+
+      if (win.isVisible()) {
+        win.hide()
+      } else {
+        win.show()
+        win.focus()
+        setTimeout(sendClipboardContent, 300)
+      }
+    })
+
+    console.log('isRegistered:', globalShortcut.isRegistered('CommandOrControl+X'));
+
+    if (fallbackRegistered) {
+      console.info(`Registered fallback shortcut: ${fallbackShortcut}`)
+      // 通知渲染进程主快捷键注册失败
+      if (win) {
+        win.webContents.send('shortcut:failed', shortcut, fallbackShortcut)
+      }
+    }
   }
 }
+
+// 单例锁
+app.requestSingleInstanceLock()
 
 // 声明自定义属性以支持应用退出标记
 // 标记应用是否正在退出
 let isQuitting = false
 
 app.whenReady().then(() => {
+  console.log('[electron]', process.versions.electron)
   createWindow()
   createTray()
   registerGlobalShortcut()
-  
+
   // 监听窗口显示事件，读取剪切板
   app.on('browser-window-focus', () => {
     setTimeout(sendClipboardContent, 300)
