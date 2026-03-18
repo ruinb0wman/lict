@@ -4,7 +4,7 @@ import { useAppStore } from '@/stores/appStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useWordsStore } from '@/stores/wordsStore'
-import { queryLLM, isSentence } from '@/utils/api'
+import { queryLLM, isSentence, isChinese } from '@/utils/api'
 import { IndexedDBService } from '@/utils/indexedDB'
 
 export function SearchBox() {
@@ -24,15 +24,14 @@ export function SearchBox() {
 
     setLoading(true)
     setError(null)
-    setLastQuery(queryText)
     setIsFromCache(false)
 
     try {
       // 首先检查是否是句子（句子不使用缓存）
       const isSentenceQuery = isSentence(queryText)
       
-      if (!isSentenceQuery) {
-        // 尝试从本地缓存获取
+      if (!isSentenceQuery && !isChinese(queryText)) {
+        // 尝试从本地缓存获取（仅英文单词）
         const cachedWord = await getWordFromCache(queryText)
         if (cachedWord) {
           // 使用缓存数据
@@ -61,13 +60,15 @@ export function SearchBox() {
       const result = await queryLLM(queryText, settings)
       setQueryResult(result)
       
-      // 如果是单词，保存到本地缓存
-      if (!isSentenceQuery) {
+      // 如果是单词，保存到本地缓存（中译英结果不缓存）
+      if (!isSentenceQuery && !isChinese(queryText)) {
         await saveWordToCache(queryText, result as { word: string; phonetic?: string; translation: Record<string, string[]>; example: { en: string; zh: string }[] })
       }
       
       // 保存到历史记录
       await addHistory(queryText, result, settings.historyLimit)
+      // 查询成功后才记录 lastQuery，失败时可以重试
+      setLastQuery(queryText)
       showToast('查询成功', 'success', 2000)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '查询失败'

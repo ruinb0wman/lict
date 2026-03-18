@@ -1,1 +1,53 @@
-"use strict";const e=require("electron");e.contextBridge.exposeInMainWorld("ipcRenderer",{on(...n){const[r,o]=n;return e.ipcRenderer.on(r,(i,...t)=>o(i,...t))},off(...n){const[r,...o]=n;return e.ipcRenderer.off(r,...o)},send(...n){const[r,...o]=n;return e.ipcRenderer.send(r,...o)},invoke(...n){const[r,...o]=n;return e.ipcRenderer.invoke(r,...o)}});e.contextBridge.exposeInMainWorld("electronClipboard",{onClipboardContent:n=>{const r=(o,i)=>n(i);return e.ipcRenderer.on("clipboard:content",r),()=>e.ipcRenderer.off("clipboard:content",r)}});e.contextBridge.exposeInMainWorld("electronWindow",{minimize:()=>e.ipcRenderer.invoke("window:minimize"),close:()=>e.ipcRenderer.invoke("window:close"),hide:()=>e.ipcRenderer.invoke("window:hide"),show:()=>e.ipcRenderer.invoke("window:show")});e.contextBridge.exposeInMainWorld("electronStore",{getSettings:()=>e.ipcRenderer.invoke("settings:get"),setSettings:n=>e.ipcRenderer.invoke("settings:set",n)});e.contextBridge.exposeInMainWorld("electronData",{getPath:()=>e.ipcRenderer.invoke("data:getPath"),history:{load:()=>e.ipcRenderer.invoke("history:load"),save:n=>e.ipcRenderer.invoke("history:save",n)}});e.contextBridge.exposeInMainWorld("electronFavorites",{export:n=>e.ipcRenderer.invoke("favorites:export",n),import:()=>e.ipcRenderer.invoke("favorites:import")});e.contextBridge.exposeInMainWorld("electronSpeech",{speak:n=>e.ipcRenderer.invoke("speech:speak",n)});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("ipcRenderer", {
+  on(...args) {
+    const [channel, listener] = args;
+    return electron.ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
+  },
+  off(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.off(channel, ...omit);
+  },
+  send(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.send(channel, ...omit);
+  },
+  invoke(...args) {
+    const [channel, ...omit] = args;
+    return electron.ipcRenderer.invoke(channel, ...omit);
+  }
+});
+electron.contextBridge.exposeInMainWorld("electronClipboard", {
+  // 监听剪切板内容变化
+  onClipboardContent: (callback) => {
+    const handler = (_, text) => callback(text);
+    electron.ipcRenderer.on("clipboard:content", handler);
+    return () => electron.ipcRenderer.off("clipboard:content", handler);
+  }
+});
+electron.contextBridge.exposeInMainWorld("electronWindow", {
+  minimize: () => electron.ipcRenderer.invoke("window:minimize"),
+  close: () => electron.ipcRenderer.invoke("window:close"),
+  hide: () => electron.ipcRenderer.invoke("window:hide"),
+  show: () => electron.ipcRenderer.invoke("window:show")
+});
+electron.contextBridge.exposeInMainWorld("electronStore", {
+  getSettings: () => electron.ipcRenderer.invoke("settings:get"),
+  setSettings: (settings) => electron.ipcRenderer.invoke("settings:set", settings)
+});
+electron.contextBridge.exposeInMainWorld("electronData", {
+  getPath: () => electron.ipcRenderer.invoke("data:getPath"),
+  // 收藏功能现在使用 IndexedDB，不再需要 IPC
+  history: {
+    load: () => electron.ipcRenderer.invoke("history:load"),
+    save: (history) => electron.ipcRenderer.invoke("history:save", history)
+  }
+});
+electron.contextBridge.exposeInMainWorld("electronFavorites", {
+  export: (favorites) => electron.ipcRenderer.invoke("favorites:export", favorites),
+  import: () => electron.ipcRenderer.invoke("favorites:import")
+});
+electron.contextBridge.exposeInMainWorld("electronSpeech", {
+  speak: (word) => electron.ipcRenderer.invoke("speech:speak", word)
+});

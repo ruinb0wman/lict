@@ -421,7 +421,7 @@ function isWord(text: string): boolean {
   const hasSpace = /\s/.test(trimmed)
   if (hasSpace) return false
   
-  const hasSentencePunctuation = /[.!?,:;"'()\[\]{}]/.test(trimmed)
+  const hasSentencePunctuation = /[.!?,:;"'()[\]{}]/.test(trimmed)
   if (hasSentencePunctuation) return false
   
   const hasLetter = /[a-zA-Z]/.test(trimmed)

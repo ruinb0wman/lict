@@ -440,6 +440,9 @@ export function QueryResultView() {
 
   // 判断是句子翻译还是单词查询
   const isSentenceResult = isSentence(lastQuery) || 'type' in queryResult
+  
+  // 判断是否为中译英结果
+  const isChineseResult = 'isChinese' in queryResult && queryResult.isChinese
 
   if (isSentenceResult) {
     // 句子翻译结果
@@ -460,6 +463,8 @@ export function QueryResultView() {
   const cachedWord = getCachedWordData(wordResult.word)
 
   const handleToggleFavorite = () => {
+    // 中译英结果不支持收藏
+    if (isChineseResult) return
     toggleFavorite(wordResult.word, wordResult)
   }
 
@@ -497,20 +502,23 @@ export function QueryResultView() {
             >
               {isEditing ? <X size={18} strokeWidth={1.5} /> : <Edit2 size={18} strokeWidth={1.5} />}
             </button>
-            <button 
-              className={`favorite-btn ${favorited ? 'active' : ''}`} 
-              title={favorited ? '取消收藏' : '收藏'}
-              onClick={handleToggleFavorite}
-            >
-              <Star 
-                size={20} 
-                strokeWidth={1.5} 
-                fill={favorited ? 'currentColor' : 'none'} 
-              />
-            </button>
+            {!isChineseResult && (
+              <button
+                className={`favorite-btn ${favorited ? 'active' : ''}`}
+                title={favorited ? '取消收藏' : '收藏'}
+                onClick={handleToggleFavorite}
+              >
+                <Star
+                  size={20}
+                  strokeWidth={1.5}
+                  fill={favorited ? 'currentColor' : 'none'}
+                />
+              </button>
+            )}
           </div>
         </div>
-        {wordResult.phonetic && (
+        {/* 中译英结果不显示音标和发音按钮 */}
+        {wordResult.phonetic && !isChineseResult && (
           <div className="word-phonetic">
             <span>{wordResult.phonetic}</span>
             <button 
@@ -544,8 +552,8 @@ export function QueryResultView() {
             ))}
           </div>
 
-          {/* 例句 */}
-          {wordResult.example && wordResult.example.length > 0 && (
+          {/* 中译英结果不显示例句 */}
+          {wordResult.example && wordResult.example.length > 0 && !isChineseResult && (
             <div className="word-examples">
               <h4 className="section-title">例句</h4>
               {wordResult.example.map((example, index) => (
@@ -557,8 +565,8 @@ export function QueryResultView() {
             </div>
           )}
 
-          {/* 批注 */}
-          {cachedWord && (
+          {/* 批注 - 中译英结果不显示 */}
+          {cachedWord && !isChineseResult && (
             <NoteSection 
               wordId={cachedWord.id} 
               note={cachedWord.note} 

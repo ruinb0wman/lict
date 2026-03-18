@@ -17,6 +17,7 @@ const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.S
 const Favorites = lazy(() => import('@/pages/Favorites').then(m => ({ default: m.Favorites })))
 const History = lazy(() => import('@/pages/History').then(m => ({ default: m.History })))
 const Review = lazy(() => import('@/pages/Review').then(m => ({ default: m.Review })))
+const GrammarCheck = lazy(() => import('@/pages/GrammarCheck').then(m => ({ default: m.GrammarCheck })))
 
 // 页面加载占位符
 function PageLoader() {
@@ -70,6 +71,12 @@ function AppContent() {
     switch (displayPage) {
       case 'search':
         return <SearchPage />
+      case 'grammar':
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <GrammarCheck />
+          </Suspense>
+        )
       case 'favorites':
         return (
           <Suspense fallback={<PageLoader />}>

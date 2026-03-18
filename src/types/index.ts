@@ -14,12 +14,14 @@ export type QueryResult = {
   phonetic?: string;
   translation: TranslationMap;
   example: ExampleSentence[];
+  isChinese?: boolean;  // 标记是否为中译英结果
 };
 
 export type SentenceTranslation = {
   type: 'sentence';
   original: string;
   translation: string;
+  isChinese?: boolean;  // 标记是否为中译英结果
 };
 
 export type QueryResponse = QueryResult | SentenceTranslation;
@@ -96,7 +98,25 @@ export type WordEntry = {
 
 // ==================== 应用状态类型 ====================
 
-export type PageType = 'search' | 'favorites' | 'history' | 'review' | 'settings';
+export type PageType = 'search' | 'favorites' | 'history' | 'review' | 'settings' | 'grammar';
+
+// ==================== 语法检查结果类型 ====================
+
+export type GrammarCorrectionType = 'grammar' | 'style' | 'word-choice' | 'spelling';
+
+export interface GrammarCorrection {
+  original: string;
+  corrected: string;
+  explanation: string;
+  type: GrammarCorrectionType;
+}
+
+export interface GrammarCheckResult {
+  originalText: string;
+  correctedText: string;
+  corrections: GrammarCorrection[];
+  overallFeedback?: string;
+}
 
 export type AppState = {
   currentPage: PageType;
