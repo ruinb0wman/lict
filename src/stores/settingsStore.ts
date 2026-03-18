@@ -7,6 +7,8 @@ interface SettingsState extends Settings {
   loadSettings: () => Promise<void>
   saveSettings: (settings: Partial<Settings>) => Promise<void>
   testConnection: () => Promise<{ success: boolean; message: string }>
+  exportSettings: () => Promise<void>
+  importSettings: () => Promise<boolean>
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
