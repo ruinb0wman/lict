@@ -36,6 +36,10 @@ electron.contextBridge.exposeInMainWorld("electronStore", {
   getSettings: () => electron.ipcRenderer.invoke("settings:get"),
   setSettings: (settings) => electron.ipcRenderer.invoke("settings:set", settings)
 });
+electron.contextBridge.exposeInMainWorld("electronSettings", {
+  export: (settings) => electron.ipcRenderer.invoke("settings:export", settings),
+  import: () => electron.ipcRenderer.invoke("settings:import")
+});
 electron.contextBridge.exposeInMainWorld("electronData", {
   getPath: () => electron.ipcRenderer.invoke("data:getPath"),
   // 收藏功能现在使用 IndexedDB，不再需要 IPC

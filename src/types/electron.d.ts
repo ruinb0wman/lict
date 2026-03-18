@@ -20,6 +20,20 @@ declare global {
       getSettings: () => Promise<Record<string, unknown>>
       setSettings: (settings: Record<string, unknown>) => Promise<boolean>
     }
+    electronSettings: {
+      export: (settings: Record<string, unknown>) => Promise<{
+        success: boolean
+        cancelled?: boolean
+        filePath?: string
+        error?: string
+      }>
+      import: () => Promise<{
+        success: boolean
+        cancelled?: boolean
+        settings?: Record<string, unknown>
+        error?: string
+      }>
+    }
     electronData: {
       getPath: () => Promise<string>
       // 收藏功能现在使用 IndexedDB，不再需要 IPC

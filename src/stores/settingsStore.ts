@@ -113,4 +113,81 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       }
     }
   },
+
+  // 导出配置
+  exportSettings: async () => {
+    try {
+      const current = get()
+      const settings = {
+        apiBaseUrl: current.apiBaseUrl,
+        apiKey: current.apiKey,
+        model: current.model,
+        temperature: current.temperature,
+        historyLimit: current.historyLimit,
+      }
+      
+      const result = await window.electronSettings.export(settings)
+      
+      if (result.cancelled) {
+        return
+      }
+      
+      if (result.success && result.filePath) {
+        setTimeout(() => {
+          useAppStore.getState().showToast('配置已导出', 'success')
+        }, 0)
+      } else {
+        setTimeout(() => {
+          useAppStore.getState().showToast(result.error || '导出失败', 'error')
+        }, 0)
+      }
+    } catch (error) {
+      console.error('Export settings failed:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('导出失败', 'error')
+      }, 0)
+    }
+  },
+
+  // 导入配置
+  importSettings: async () => {
+    try {
+      const result = await window.electronSettings.import()
+      
+      if (result.cancelled) {
+        return false
+      }
+      
+      if (!result.success || !result.settings) {
+        setTimeout(() => {
+          useAppStore.getState().showToast(result.error || '导入失败', 'error')
+        }, 0)
+        return false
+      }
+
+      const importedSettings = result.settings
+      const newSettings = {
+        apiBaseUrl: String(importedSettings.apiBaseUrl),
+        apiKey: String(importedSettings.apiKey),
+        model: String(importedSettings.model),
+        temperature: Number(importedSettings.temperature),
+        historyLimit: Number(importedSettings.historyLimit),
+      }
+      
+      // 保存到 store
+      await get().saveSettings(newSettings)
+      
+      setTimeout(() => {
+        useAppStore.getState().showToast('配置已导入', 'success')
+      }, 0)
+      
+      return true
+    } catch (error) {
+      console.error('Import settings failed:', error)
+      setTimeout(() => {
+        useAppStore.getState().showToast('导入失败', 'error')
+      }, 0)
+      return false
+    }
+  },
 }))

@@ -19086,6 +19086,65 @@ ipcMain$1.handle("speech:speak", async (_, word) => {
     throw error2;
   }
 });
+ipcMain$1.handle("settings:export", async (_, settings) => {
+  try {
+    const { filePath } = await dialog.showSaveDialog({
+      title: "导出配置",
+      defaultPath: `settings_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`,
+      filters: [
+        { name: "JSON Files", extensions: ["json"] },
+        { name: "All Files", extensions: ["*"] }
+      ]
+    });
+    if (!filePath) {
+      return { success: false, cancelled: true };
+    }
+    const exportData = {
+      version: "1.0",
+      exportDate: Date.now(),
+      type: "settings",
+      settings
+    };
+    fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2), "utf-8");
+    return { success: true, filePath };
+  } catch (error2) {
+    console.error("Export settings failed:", error2);
+    return { success: false, error: String(error2) };
+  }
+});
+ipcMain$1.handle("settings:import", async () => {
+  try {
+    const { filePaths } = await dialog.showOpenDialog({
+      title: "导入配置",
+      filters: [
+        { name: "JSON Files", extensions: ["json"] },
+        { name: "All Files", extensions: ["*"] }
+      ],
+      properties: ["openFile"]
+    });
+    if (!filePaths || filePaths.length === 0) {
+      return { success: false, cancelled: true };
+    }
+    const fileContent = fs.readFileSync(filePaths[0], "utf-8");
+    const importData = JSON.parse(fileContent);
+    if (!importData.settings || typeof importData.settings !== "object") {
+      return { success: false, error: "Invalid file format: settings object not found" };
+    }
+    const requiredFields = ["apiBaseUrl", "apiKey", "model", "temperature", "historyLimit"];
+    const settings = importData.settings;
+    const missingFields = requiredFields.filter((field) => !(field in settings));
+    if (missingFields.length > 0) {
+      return { success: false, error: `Missing required fields: ${missingFields.join(", ")}` };
+    }
+    return {
+      success: true,
+      settings
+    };
+  } catch (error2) {
+    console.error("Import settings failed:", error2);
+    return { success: false, error: String(error2) };
+  }
+});
 ipcMain$1.handle("favorites:export", async (_, favorites) => {
   try {
     const { filePath } = await dialog.showSaveDialog({

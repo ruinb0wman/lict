@@ -2122,3 +2122,58 @@ body {
   font-size: 14px;
   color: var(--color-secondary);
 }
+
+/* ==================== 数据管理样式 ==================== */
+.settings-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-section .section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.data-management-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.data-management-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.data-management-info h4 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.data-management-info p {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.data-management-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-small {
+  height: 32px;
+  padding: 0 var(--spacing-md);
+  font-size: 13px;
+}

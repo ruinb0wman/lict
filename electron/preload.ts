@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('electronStore', {
   setSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('settings:set', settings),
 })
 
+// 设置导入导出 API
+contextBridge.exposeInMainWorld('electronSettings', {
+  export: (settings: Record<string, unknown>) => ipcRenderer.invoke('settings:export', settings),
+  import: () => ipcRenderer.invoke('settings:import'),
+})
+
 // 数据存储 API
 contextBridge.exposeInMainWorld('electronData', {
   getPath: () => ipcRenderer.invoke('data:getPath'),

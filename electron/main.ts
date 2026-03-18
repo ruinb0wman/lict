@@ -302,6 +302,79 @@ ipcMain.handle('speech:speak', async (_, word: string) => {
   }
 })
 
+// 设置导入导出
+ipcMain.handle('settings:export', async (_, settings: Record<string, unknown>) => {
+  try {
+    const { filePath } = await dialog.showSaveDialog({
+      title: '导出配置',
+      defaultPath: `settings_${new Date().toISOString().split('T')[0]}.json`,
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+    
+    if (!filePath) {
+      return { success: false, cancelled: true }
+    }
+    
+    const exportData = {
+      version: '1.0',
+      exportDate: Date.now(),
+      type: 'settings',
+      settings: settings
+    }
+    
+    fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2), 'utf-8')
+    return { success: true, filePath }
+  } catch (error) {
+    console.error('Export settings failed:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
+ipcMain.handle('settings:import', async () => {
+  try {
+    const { filePaths } = await dialog.showOpenDialog({
+      title: '导入配置',
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+    
+    if (!filePaths || filePaths.length === 0) {
+      return { success: false, cancelled: true }
+    }
+    
+    const fileContent = fs.readFileSync(filePaths[0], 'utf-8')
+    const importData = JSON.parse(fileContent)
+    
+    // 验证数据结构
+    if (!importData.settings || typeof importData.settings !== 'object') {
+      return { success: false, error: 'Invalid file format: settings object not found' }
+    }
+    
+    // 验证必要的配置字段
+    const requiredFields = ['apiBaseUrl', 'apiKey', 'model', 'temperature', 'historyLimit']
+    const settings = importData.settings as Record<string, unknown>
+    const missingFields = requiredFields.filter(field => !(field in settings))
+    
+    if (missingFields.length > 0) {
+      return { success: false, error: `Missing required fields: ${missingFields.join(', ')}` }
+    }
+    
+    return { 
+      success: true, 
+      settings: settings
+    }
+  } catch (error) {
+    console.error('Import settings failed:', error)
+    return { success: false, error: String(error) }
+  }
+})
+
 // 收藏数据导入导出
 ipcMain.handle('favorites:export', async (_, favorites: FavoriteWord[]) => {
   try {
